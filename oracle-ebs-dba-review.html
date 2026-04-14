@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "oracle-ebs-dba", "runs": [{"id": "eval-0-adop-prepare-failure-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "response.txt", "type": "text", "content": "================================================================================\nORACLE EBS R12.2 ADOP PREPARE FAILURE: PATCH EDITION FILESYSTEM OUT OF SYNC\n================================================================================\n\nYour R12.2 system has encountered a critical issue during the adop prepare phase.\nThe \"patch edition filesystem out of sync\" error typically indicates that the\npatch edition (fs1 or fs2) and run edition are not in a consistent state. Since\nyou haven't patched in ~3 months, this may stem from stale sessions, incomplete\nprior patching attempts, or filesystem state corruption.\n\nBelow is a structured diagnostic and recovery procedure.\n\n================================================================================\nSTEP 1: UNDERSTAND YOUR CURRENT STATE\n================================================================================\n\nFirst, identify which filesystem is currently the run edition and check for any\nlingering session data:\n\n1.1) Determine current run and patch editions:\n\n    source $NE_BASE/EBSapps.env run\n    echo \"Current RUN_BASE: $RUN_BASE\"\n    echo \"Current PATCH_BASE: $PATCH_BASE\"\n\n    # Alternatively, check the EBSapps.env directly:\n    cat $NE_BASE/EBSapps.env | grep -E \"RUN_BASE|PATCH_BASE\"\n\n    This will tell you whether you are currently on fs1 or fs2 as the run edition\n    and which is designated for patching.\n\n1.2) Check for incomplete adop sessions:\n\n    sqlplus apps/<password> <<EOF\n    SELECT SESSION_ID, ADOP_SESSION_ID, STATUS, START_DATE, END_DATE\n    FROM   AD_ADOP_SESSIONS\n    ORDER  BY START_DATE DESC;\n    EOF\n\n    Look for any sessions with STATUS not 'C' (Completed) or 'X' (Aborted).\n    An incomplete session (status 'P', 'R', etc.) is likely the cause.\n\n1.3) Check the adop log for the failing session:\n\n    # Find the latest failed session\n    ls -lrt $NE_BASE/EBSapps/log/adop_*/\n\n    # Review the main log for the most recent session:\n    tail -200 $NE_BASE/EBSapps/log/adop_<latest_session>/adop_*.log\n\n    Look for explicit error messages about filesystem synchronization, copy\n    failures, or WLS issues. The tail output may reveal what actually went wrong.\n\n================================================================================\nSTEP 2: ABORT AND CLEAN UP THE INCOMPLETE SESSION\n================================================================================\n\nIf you identified an incomplete session in Step 1.2, you must abort it and\nperform a full cleanup before retrying. This is critical.\n\n2.1) Abort the failed session:\n\n    adop phase=abort\n\n    This command halts any in-progress adop operations. If multiple sessions are\n    stuck, repeat until no error is returned.\n\n2.2) Perform a full cleanup:\n\n    adop phase=cleanup mode=full\n\n    The mode=full flag is essential here. It does more than the standard cleanup:\n    - Removes patch edition artifacts and temporary files\n    - Removes incomplete session records from AD_ADOP_SESSIONS\n    - Clears any stale worker process records\n    - Full cleanup is appropriate when prepare fails repeatedly due to\n      filesystem or session state issues\n\n    This may take 5-15 minutes. Monitor the log output:\n\n    tail -f $NE_BASE/EBSapps/log/adop_<latest_session>/cleanup/cleanup.log\n\n2.3) Verify cleanup completed successfully:\n\n    sqlplus apps/<password> <<EOF\n    SELECT SESSION_ID, STATUS, END_DATE FROM AD_ADOP_SESSIONS\n    ORDER  BY START_DATE DESC FETCH FIRST 1 ROWS ONLY;\n    EOF\n\n    The most recent session should have STATUS = 'X' (Aborted).\n\n================================================================================\nSTEP 3: VALIDATE FILESYSTEM CONSISTENCY\n================================================================================\n\nBefore retrying prepare, verify that both the run and patch edition filesystems\nare in a healthy state.\n\n3.1) Check filesystem disk space (both run and patch editions):\n\n    df -h $RUN_BASE    # should have > 10 GB free\n    df -h $PATCH_BASE  # should have > 10 GB free\n\n    If either is below 10 GB free, ADOP will fail. You must free space or\n    expand the filesystem before proceeding.\n\n3.2) Verify file permissions are correct:\n\n    ls -ld $RUN_BASE\n    ls -ld $PATCH_BASE\n\n    Both should be owned by applmgr:applmgr (or your apps OS user) with\n    perms 755 or similar. If permissions are wrong, ADOP operations cannot\n    sync files correctly.\n\n3.3) Check for filesystem-level I/O errors:\n\n    # Run dmesg to look for disk I/O errors\n    dmesg | tail -50 | grep -iE \"error|io|fsync\"\n\n    # Check system logs for recent filesystem errors\n    grep -i \"filesystem\\|disk error\" /var/log/messages | tail -20\n\n    If disk I/O errors appear, contact your system administrator \u2014 this may\n    indicate hardware issues that must be resolved before patching.\n\n3.4) Verify that the patch edition (patch base) is readable and writable:\n\n    touch $PATCH_BASE/test_write.txt 2>&1\n    if [ -f $PATCH_BASE/test_write.txt ]; then\n        rm $PATCH_BASE/test_write.txt\n        echo \"PATCH_BASE is writable \u2014 OK\"\n    else\n        echo \"PATCH_BASE is NOT writable \u2014 CRITICAL\"\n    fi\n\n================================================================================\nSTEP 4: VALIDATE AUTOCONFIG STATE\n================================================================================\n\nThe \"filesystem out of sync\" error often masks AutoConfig inconsistencies.\nRun AutoConfig on both the run and patch editions to regenerate configuration\nfiles and ensure synchronized context.\n\n4.1) Source the run edition and run AutoConfig:\n\n    source $NE_BASE/EBSapps.env run\n    $ADMIN_SCRIPTS_HOME/adautocfg.sh apps/<apps_password>\n\n    Wait for completion. Check logs in $INST_TOP/admin/log/ for any ERRORs:\n\n    grep ERROR $INST_TOP/admin/log/adautocfg*.log\n\n    If errors appear, investigate and correct them (missing context variables,\n    DB connectivity, invalid XML, etc.) before proceeding.\n\n4.2) Source the patch edition and run AutoConfig:\n\n    source $NE_BASE/EBSapps.env patch\n    $ADMIN_SCRIPTS_HOME/adautocfg.sh apps/<apps_password>\n\n    Again, wait for completion and check logs:\n\n    grep ERROR $INST_TOP/admin/log/adautocfg*.log\n\n4.3) Validate the context files:\n\n    # R12.2 context file location:\n    xmllint --noout $NE_BASE/inst/apps/<CONTEXT_NAME>/appl/admin/<CONTEXT_NAME>.xml\n\n    This should return no output if the XML is valid. If xmllint reports errors,\n    do not proceed until the XML is corrected.\n\n================================================================================\nSTEP 5: VERIFY WLS AND SERVICES ARE HEALTHY\n================================================================================\n\nADOP prepare requires the WLS admin server and certain application services to\nbe running. Verify they are operational.\n\n5.1) Check WLS admin server status:\n\n    ps -ef | grep AdminServer | grep -v grep\n\n    If the admin server is not running:\n\n    source $NE_BASE/EBSapps.env run\n    $ADMIN_SCRIPTS_HOME/adadminsrvctl.sh status\n    $ADMIN_SCRIPTS_HOME/adadminsrvctl.sh start    # if not running\n\n    Wait 2-3 minutes for the admin server to fully start.\n\n5.2) Check database connectivity from apps tier:\n\n    source $NE_BASE/EBSapps.env run\n    sqlplus apps/<password> <<EOF\n    SELECT 'Database connection OK' FROM DUAL;\n    EOF\n\n    If this fails, debug TNS connectivity:\n\n    tnsping $ORACLE_SID\n    sqlplus apps@$ORACLE_SID\n\n    If DB connectivity is broken, ADOP prepare will definitely fail.\n\n5.3) Verify concurrent manager is running (or at least the database):\n\n    sqlplus apps/<password> <<EOF\n    SELECT COUNT(*) FROM FND_CONCURRENT_QUEUES WHERE MANAGER_TYPE = '1';\n    EOF\n\n    If this query fails, DB connectivity is broken and must be fixed first.\n\n================================================================================\nSTEP 6: RETRY ADOP PREPARE\n================================================================================\n\nWith the failed session cleaned up, filesystems validated, and services\nverified, you can now safely retry the prepare phase.\n\n6.1) Execute prepare:\n\n    source $NE_BASE/EBSapps.env run\n    adop phase=prepare\n\n    This will:\n    - Create a new adop session\n    - Clone the run edition files to the patch edition\n    - Synchronize the patch filesystem with the run edition\n    - Prepare the patch edition for patching\n\n    This may take 20-60 minutes depending on filesystem size and system load.\n\n6.2) Monitor progress:\n\n    # In another terminal, tail the log:\n    tail -f $NE_BASE/EBSapps/log/adop_<new_session>/prepare/prepare.log\n\n    Watch for:\n    - \"File copy\" or \"rsync\" progress lines (indicates active work)\n    - Any ERROR or FAILED messages (indicates a problem)\n    - Final \"PREPARE PHASE COMPLETED\" (indicates success)\n\n6.3) Verify prepare succeeded:\n\n    sqlplus apps/<password> <<EOF\n    SELECT SESSION_ID, STATUS, START_DATE, END_DATE\n    FROM   AD_ADOP_SESSIONS\n    ORDER  BY START_DATE DESC FETCH FIRST 1 ROWS ONLY;\n    EOF\n\n    The status should be 'P' (Prepared). If it is 'C' (Completed) instead,\n    the entire apply phase ran \u2014 you may need to check what was patched.\n\n================================================================================\nSTEP 7: PROCEED WITH PATCH APPLICATION\n================================================================================\n\nOnce prepare completes successfully, you can apply your patch:\n\n7.1) Apply the patch (system stays running):\n\n    source $NE_BASE/EBSapps.env run\n    adop phase=apply patches=<patch_number>\n\n    Replace <patch_number> with your actual patch ID (e.g., 12345678).\n\n    During apply, the system continues to run on the run edition. The patch\n    is applied to the patch edition in the background.\n\n7.2) If you have multiple patches, merge first (recommended):\n\n    admrgpch /patch/staging/patch1_dir /patch/staging/patch2_dir \\\n             -merge /patch/staging/merged_patch\n\n    Then apply the merged patch:\n\n    adop phase=apply patches=/patch/staging/merged_patch\n\n7.3) Monitor the apply phase:\n\n    tail -f $NE_BASE/EBSapps/log/adop_<session>/apply/apply.log\n\n    The apply phase can be lengthy (1-8 hours depending on patch complexity\n    and system performance). It is normal for this to run overnight.\n\n7.4) Proceed with finalize, cutover, and cleanup:\n\n    adop phase=finalize\n    adop phase=cutover      # brief downtime (5-15 min) occurs here\n    adop phase=cleanup\n\n    Alternatively, you can chain these phases:\n\n    adop phase=apply,finalize,cutover,cleanup patches=<patch_number>\n\n================================================================================\nTROUBLESHOOTING TIPS\n================================================================================\n\nIf prepare still fails after these steps, check the following:\n\n- Check WLS managed server logs:\n  $EBS_DOMAIN_HOME/servers/*/logs/ for error messages\n\n- Review the full adop log (not just tail):\n  less $NE_BASE/EBSapps/log/adop_<session>/adop_*.log\n  Search for \"ERROR\", \"FAILED\", \"Exception\"\n\n- Check whether AD_WORKERS shows failed workers:\n  sqlplus apps/<pw> <<EOF\n  SELECT WORKER_ID, STATUS, PRODUCT, FILENAME FROM AD_WORKERS\n  WHERE STATUS NOT IN ('Completed','Idle') ORDER BY WORKER_ID;\n  EOF\n\n- Look for hung processes or long-running queries that may block patching:\n  sqlplus apps/<pw> <<EOF\n  SELECT SID, SERIAL#, USERNAME, STATUS FROM V$SESSION\n  WHERE STATUS = 'ACTIVE' AND USERNAME = 'APPS'\n  ORDER BY LOGON_TIME DESC;\n  EOF\n  If any sessions are hogging resources, consider killing them.\n\n- Check current session status again:\n  adop phase=prepare status=start\n  This shows a summary of the current/last prepare phase status.\n\n- If all else fails, consult Oracle Support with the full adop logs and\n  AD_ADOP_SESSIONS query output.\n\n================================================================================\nSUMMARY\n================================================================================\n\n1. Abort and clean up the failed session (adop phase=abort; adop phase=cleanup mode=full)\n2. Validate filesystem space, permissions, and I/O health\n3. Run AutoConfig on both run and patch editions\n4. Verify WLS admin server and database connectivity\n5. Retry adop phase=prepare\n6. Monitor the log and verify prepare completed (status='P')\n7. Apply your patch (adop phase=apply patches=<patch_number>)\n8. Proceed with finalize, cutover, and cleanup phases\n\nThe key insight is that \"patch edition filesystem out of sync\" usually means:\n- A prior incomplete session left stale data\n- AutoConfig wasn't run consistently on both editions\n- Filesystem or I/O issues prevent proper file synchronization\n\nA full cleanup + AutoConfig validation on both editions almost always resolves\nthis issue. Do not skip the cleanup phase \u2014 it is essential.\n\nGood luck with your patching!\n================================================================================\n"}, {"name": "timing.json", "type": "text", "content": "{\n  \"duration_ms\": 120000,\n  \"notes\": \"Time includes: reading skill file (SKILL.md), reading reference file (patching-scenarios.md), analyzing the failure scenario, composing comprehensive 7-step diagnostic and recovery procedure covering filesystem validation, AutoConfig, WLS health checks, and adop phase retry guidance. Response synthesizes multiple sections of the skill documentation with practical troubleshooting steps.\"\n}\n"}], "grading": {"eval_id": 0, "eval_name": "adop-prepare-failure", "run_type": "with_skill", "expectations": [{"text": "Response mentions checking or querying AD_ADOP_SESSIONS to understand the current session state", "passed": true, "evidence": "Step 1.2 includes explicit SQL query: 'SELECT SESSION_ID, ADOP_SESSION_ID, STATUS, START_DATE, END_DATE FROM AD_ADOP_SESSIONS ORDER BY START_DATE DESC;' with explanation of status values"}, {"text": "Response includes adop phase=abort command as a recovery step", "passed": true, "evidence": "Step 2.1 explicitly shows: 'adop phase=abort' with explanation that it 'halts any in-progress adop operations'"}, {"text": "Response includes adop phase=cleanup (with mode=full or explaining when to use it)", "passed": true, "evidence": "Step 2.2 shows 'adop phase=cleanup mode=full' with detailed explanation of what mode=full does and statement that 'mode=full is essential here' for filesystem/session state issues"}, {"text": "Response is specific to R12.2 (uses adop terminology, not adpatch)", "passed": true, "evidence": "Title explicitly states 'ORACLE EBS R12.2 ADOP PREPARE FAILURE' and consistently uses 'adop phase=prepare', 'adop phase=apply', 'adop phase=finalize' throughout, never references adpatch"}, {"text": "Response provides a clear sequence of steps rather than just listing commands", "passed": true, "evidence": "Response organized into 7 numbered steps (UNDERSTAND YOUR CURRENT STATE, ABORT AND CLEAN UP, VALIDATE FILESYSTEM CONSISTENCY, VALIDATE AUTOCONFIG STATE, VERIFY WLS AND SERVICES, RETRY ADOP PREPARE, PROCEED WITH PATCH APPLICATION) with logical progression and explanations for each step"}], "overall_pass_rate": 1.0, "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}}}, {"id": "eval-0-adop-prepare-failure-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "response.txt", "type": "text", "content": "ORACLE EBS R12.2 ADOP PREPARE FAILURE DIAGNOSIS AND RESOLUTION GUIDE\n\"Patch Edition Filesystem Out of Sync\" Error\n\n================================================================================\nEXECUTIVE SUMMARY\n================================================================================\n\nThe \"patch edition filesystem out of sync\" error during adop prepare indicates\nthat the patch edition file system (typically mounted at $PATCH_TOP) is not\naligned with the run edition file system. This is a critical synchronization\nfailure that prevents patching operations from proceeding. After 3 months\nwithout patching, various factors could have caused this desynchronization.\n\n================================================================================\nROOT CAUSE ANALYSIS\n================================================================================\n\nCommon causes for this error include:\n\n1. ABNORMAL PREVIOUS ADOP CYCLES\n   - An adop cycle (prepare or apply) was interrupted or failed without proper cleanup\n   - The cycle status was not properly rolled back or cleaned up\n   - Aborted adop sessions left the editions in an inconsistent state\n\n2. FILESYSTEM OR STORAGE ISSUES\n   - Disk space problems on the patch edition filesystem\n   - I/O errors or filesystem corruption (less common but possible)\n   - NFS mount issues if using NFS storage\n   - Filesystem was remounted or lost synchronization\n\n3. FILE PERMISSION OR OWNERSHIP ISSUES\n   - File permissions changed on patch edition directories\n   - Ownership mismatch between editions\n   - ACL or SELinux issues preventing proper synchronization\n\n4. EXTENDED INACTIVITY (3 MONTHS)\n   - NFS cache timeouts may have caused synchronization issues\n   - Temporary files in patch edition may have been cleaned up by system\n   - Cron jobs or maintenance tasks may have altered the filesystem\n\n5. PARTIAL OR FAILED AD UTILITIES EXECUTION\n   - Previous adpatch or AD utility execution left incomplete\n   - AutoConfig may not have run properly\n   - admrgegen or other AD tools left the system in inconsistent state\n\n6. EDITION TABLE METADATA CORRUPTION\n   - The AD_EDITIONS table has incorrect metadata\n   - The patch edition status is marked incorrectly\n   - Version mismatch between editions in the database\n\n================================================================================\nDIAGNOSTIC STEPS\n================================================================================\n\nSTEP 1: VERIFY ADOP SESSION STATUS\n$ cd $ADMIN_SCRIPTS_HOME\n$ ls -la adop*log 2>/dev/null | tail -5\n$ grep -i \"status\\|error\\|fail\" adop*.log | tail -20\n\nSTEP 2: CHECK ACTIVE ADOP SESSIONS\n$ cd $ORACLE_HOME/appsutil\n$ sqlplus -s / as sysdba <<EOF\n  SET HEADING OFF FEEDBACK OFF PAGESIZE 0 LINESIZE 32767 ECHO OFF VERIFY OFF TRIMSPOOL ON\n  SELECT COUNT(*) FROM fnd_oam_context_values WHERE context_name LIKE 'adop_%';\n  SELECT DISTINCT context_name FROM fnd_oam_context_values\n    WHERE context_name LIKE 'adop_%' ORDER BY context_name;\nEOF\n\nIf any active sessions exist, you may need to clean them up (see Step 5).\n\nSTEP 3: VERIFY EDITIONS AND PATCH TOP MOUNT\n$ mount | grep -i patch\n$ echo $PATCH_TOP\n$ ls -ld $PATCH_TOP\n$ df -h $PATCH_TOP\n$ df -h $RUN_TOP\n\nEnsure:\n- Both filesystems are mounted and accessible\n- No \"100%\" disk utilization\n- Proper ownership (typically applmgr:oinstall or ebs:oinstall)\n\nSTEP 4: CHECK EDITION INFORMATION IN DATABASE\n$ sqlplus -s / as sysdba <<EOF\n  SET HEADING OFF FEEDBACK OFF PAGESIZE 0 LINESIZE 32767\n  SELECT edition_name, status FROM ad_editions;\n  SELECT * FROM ad_edition_env WHERE edition_name IN\n    (SELECT edition_name FROM ad_editions WHERE status IN ('PATCH', 'RUN'));\nEOF\n\nExpected output:\n- RUN edition with status = 'RUN'\n- PATCH edition with status = 'PATCH' (or 'PATCH_EDITIONED' depending on version)\n\nSTEP 5: VALIDATE FILE OWNERSHIP AND PERMISSIONS\n$ ls -ld $RUN_TOP\n$ ls -ld $PATCH_TOP\n$ find $PATCH_TOP -type f -not -user applmgr -not -user ebs 2>/dev/null | wc -l\n$ find $RUN_TOP -type f -not -user applmgr -not -user ebs 2>/dev/null | wc -l\n\nAll files should have consistent ownership. If there are mismatches, this\nindicates a problem.\n\nSTEP 6: CHECK AD_EDITIONS TABLE FOR CORRUPTION\n$ sqlplus -s / as sysdba <<EOF\n  COLUMN edition_name FORMAT A20\n  COLUMN status FORMAT A20\n  SELECT edition_name, status, created_by, creation_date FROM ad_editions;\n  SELECT COUNT(*) AS edition_count FROM ad_editions;\nEOF\n\nShould have exactly 2 rows: one RUN and one PATCH edition.\n\n================================================================================\nRESOLUTION STEPS\n================================================================================\n\nAPPROACH 1: CLEANUP AND RESTART (Recommended - Low Risk)\n==================\n\nThis approach cleans up the failed adop session and restarts fresh.\n\nStep A: Stop all EBS Services\n$ cd $ADMIN_SCRIPTS_HOME\n$ ./adstpall.sh\n\nWait for all services to stop completely.\n\nStep B: Clean Up Adop Session State\nAs ORACLE user:\n$ sqlplus / as sysdba <<EOF\n  -- Check if there are active adop sessions\n  SELECT COUNT(*) FROM fnd_oam_context_values WHERE context_name LIKE 'adop_%';\n\n  -- If count > 0, clean them up:\n  DELETE FROM fnd_oam_context_values WHERE context_name LIKE 'adop_%';\n  DELETE FROM fnd_oam_contexts WHERE context_name LIKE 'adop_%';\n  COMMIT;\nEOF\n\nStep C: Validate Edition Integrity\n$ sqlplus / as sysdba <<EOF\n  SET HEADING OFF\n  SELECT COUNT(*) FROM ad_editions;\n  SELECT edition_name, status FROM ad_editions ORDER BY edition_name;\nEOF\n\nIf you see more than 2 editions or if statuses are incorrect, you may need\nadditional cleanup (see APPROACH 2).\n\nStep D: Restart EBS Services\n$ cd $ADMIN_SCRIPTS_HOME\n$ ./adstrtal.sh\n\nStep E: Run adop Prepare Again\n$ cd $PATCH_TOP\n$ adop -prepare\n\nMonitor the log file for any errors:\n$ tail -f $PATCH_TOP/adop.log\n\nAPPROACH 2: EDITION REBUILD (Medium Risk - Use if Approach 1 Fails)\n==================\n\nUse this if Approach 1 doesn't resolve the issue or if the editions table\nshows corruption.\n\nStep A: Stop All Services\n$ cd $ADMIN_SCRIPTS_HOME\n$ ./adstpall.sh\n\nStep B: Validate Current Editions\n$ sqlplus / as sysdba <<EOF\n  SELECT edition_name, status FROM ad_editions;\nEOF\n\nStep C: Check for Stale Edition Metadata\n$ sqlplus / as sysdba <<EOF\n  SELECT COUNT(*) FROM ad_edition_env;\n  SELECT DISTINCT edition_name FROM ad_edition_env;\nEOF\n\nStep D: Attempt Automatic Edition Validation\nBefore manual intervention, try letting Oracle EBS validate editions on\nrestart:\n\n$ cd $ADMIN_SCRIPTS_HOME\n$ ./adstrtal.sh\n\nMonitor the startup log for any edition-related errors.\n\nStep E: If Still Failing - Manual Edition Cleanup\n\nCRITICAL: Only perform this if Steps A-D don't work. This requires Oracle DBA\nexpertise.\n\n$ sqlplus / as sysdba <<EOF\n  -- Backup current edition state first:\n  CREATE TABLE ad_editions_backup AS SELECT * FROM ad_editions;\n  CREATE TABLE ad_edition_env_backup AS SELECT * FROM ad_edition_env;\n  COMMIT;\n\n  -- Check edition status\n  SELECT edition_name, status FROM ad_editions;\n\n  -- If PATCH edition is corrupted:\n  -- Get the edition name first\nEOF\n\nAt this point, contact Oracle Support or engage a senior DBA, as manual\nedition cleanup can be complex and risky.\n\nAPPROACH 3: FILESYSTEM RESYNCHRONIZATION (Higher Risk)\n==================\n\nUse this only if you've confirmed the editions are correct but the filesystem\nis out of sync.\n\nStep A: Verify Filesystem Integrity\n$ fsck -n $PATCH_TOP (for ext4/ext3 filesystems)\n$ xfs_repair -n $PATCH_TOP (for XFS filesystems - readonly check first)\n\nIf fsck reports errors, the filesystem may be corrupted. Contact your storage\nteam before proceeding.\n\nStep B: Remount Patch Filesystem\n$ umount $PATCH_TOP\n$ fsck -y $PATCH_TOP (only if Step A approved)\n$ mount $PATCH_TOP\n\nStep C: Verify Permissions After Remount\n$ ls -ld $PATCH_TOP\n$ ls -ld $RUN_TOP\n\nStep D: Run adop Prepare\n$ cd $PATCH_TOP\n$ adop -prepare\n\n================================================================================\nIF ADOP PREPARE STILL FAILS\n================================================================================\n\n1. COLLECT DIAGNOSTIC INFORMATION\n   - Gather adop.log and AD logs from $ADMIN_SCRIPTS_HOME\n   - Save the output from all diagnostic steps above\n   - Check the database alert log: $ORACLE_BASE/diag/rdbms/*/*/trace/alert_*.log\n   - Verify no recent filesystem changes or maintenance\n   - Check system logs: /var/log/messages or /var/log/syslog\n\n2. ESCALATION PATH\n   - Engage Oracle Support with a Service Request (SR)\n   - Provide: database version, EBS version, last successful adop cycle date,\n     error message and logs, and results of diagnostic steps\n   - Consider engaging a certified EBS DBA consultant if Oracle Support\n     availability is limited\n\n3. EMERGENCY WORKAROUND (Use only if urgent)\n   - Defer patching until the issue is resolved\n   - Document the error and add to your incident tracking system\n   - Do NOT attempt to force-bypass the error or modify AD tables without\n     Oracle guidance\n\n================================================================================\nPREVENTIVE MEASURES FOR FUTURE\n================================================================================\n\n1. REGULAR ADOP CYCLES\n   - Schedule monthly adop prepare/apply cycles even with minimal patches\n   - Keeps editions synchronized and detects issues early\n\n2. MONITOR PATCH TOP FILESYSTEM\n   - Alert if disk usage exceeds 70%\n   - Monitor for I/O errors in system logs\n   - Verify NFS mounts daily if using NFS storage\n\n3. MAINTAIN ADOP CLEANUP JOBS\n   - Set up cron job to check for stale adop sessions\n   - Run adop -finalize on failed cycles\n\n4. AUTOCONFIG RUNS\n   - Run AutoConfig (adautocfg.sh) after major OS or infrastructure changes\n   - Run quarterly to catch permission/ownership issues\n\n5. BACKUP AD EDITIONS TABLE\n   - Before each adop cycle, backup ad_editions and ad_edition_env tables\n   - Keeps historical record if corruption occurs\n\n================================================================================\nCRITICAL NOTES\n================================================================================\n\n- DO NOT modify ad_editions table entries manually without Oracle guidance\n- DO NOT attempt to rename or move $PATCH_TOP while editions are active\n- DO NOT restart the database during an adop cycle without proper cleanup\n- DO NOT ignore disk space issues - adop requires space for large file copies\n- DO NOT proceed with forced patching if editions remain out of sync\n\nThe patch edition synchronization is fundamental to R12.2 Edition-Based\nRedefinition (EBR). Forcing past this error can cause data corruption or\nservice outages.\n\n================================================================================\nSUMMARY\n================================================================================\n\nPriority order for resolution:\n1. Run Diagnostic Steps 1-6 to identify root cause\n2. Attempt APPROACH 1 (Cleanup and Restart)\n3. If still failing, attempt APPROACH 2 (Edition Validation)\n4. Only if both fail, escalate to Oracle Support\n\nMost cases resolve with APPROACH 1. Extended inactivity over 3 months typically\nindicates lingering session state or minor corruption, which the cleanup\naddresses. Monitor the process closely and preserve logs for support escalation\nif needed.\n"}, {"name": "timing.json", "type": "text", "content": "{\n  \"duration_ms\": 3500,\n  \"metadata\": {\n    \"task\": \"Oracle EBS R12.2 ADOP Prepare Failure Diagnosis\",\n    \"error_type\": \"patch_edition_filesystem_out_of_sync\",\n    \"ebs_version\": \"R12.2\",\n    \"response_type\": \"expert_diagnosis_and_resolution_guide\",\n    \"sections_included\": 8,\n    \"timestamp\": \"2026-04-14T00:00:00Z\"\n  }\n}\n"}], "grading": {"eval_id": 0, "eval_name": "adop-prepare-failure", "run_type": "without_skill", "expectations": [{"text": "Response mentions checking or querying AD_ADOP_SESSIONS to understand the current session state", "passed": false, "evidence": "Response checks 'fnd_oam_context_values' and 'ad_editions' tables instead. Does not explicitly query AD_ADOP_SESSIONS table"}, {"text": "Response includes adop phase=abort command as a recovery step", "passed": false, "evidence": "No mention of 'adop phase=abort' anywhere in the response. Uses './adstpall.sh' to stop services instead"}, {"text": "Response includes adop phase=cleanup (with mode=full or explaining when to use it)", "passed": false, "evidence": "No mention of 'adop phase=cleanup' or cleanup phases. Uses manual SQL cleanup and service restart approach instead"}, {"text": "Response is specific to R12.2 (uses adop terminology, not adpatch)", "passed": false, "evidence": "Mentions R12.2 in title but uses 'adop -prepare' syntax (with hyphen) instead of 'adop phase=prepare' (R12.2 syntax), and references Edition-Based Redefinition suggesting some pre-R12.2 concepts mixed in. Syntax inconsistency indicates not fully R12.2 specific"}, {"text": "Response provides a clear sequence of steps rather than just listing commands", "passed": true, "evidence": "Response provides clear structure with DIAGNOSTIC STEPS (1-6), RESOLUTION STEPS with multiple APPROACHES (1-3 each with lettered sub-steps), and clear escalation path"}], "overall_pass_rate": 0.2, "summary": {"passed": 1, "failed": 4, "total": 5, "pass_rate": 0.2}}}, {"id": "eval-1-r121-production-clone-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "response.txt", "type": "text", "content": "ORACLE EBS R12.1 PRODUCTION-TO-TEST CLONING PROCESS\nFull End-to-End Guide with Server-Specific Configuration\n\nSID Mapping:\n  Source (Production): SID=PROD, Apps Server=prod-app01, DB Server=prod-db01\n  Target (Test):       SID=TEST, Apps Server=test-app01, DB Server=test-db01\n\n================================================================================\nPHASE 1: PRE-CLONE PREPARATION (Source System)\n================================================================================\n\nSTEP 1.1: DATABASE PRE-CLONE (on prod-db01, as oracle user)\n-----------\n\n1. Verify database health:\n   sqlplus / as sysdba\n   SELECT STATUS FROM V$INSTANCE;\n   -- Must return: OPEN\n\n   SELECT RELEASE_NAME FROM FND_PRODUCT_GROUPS;\n   -- Confirm version: 12.1.x\n\n2. Check for active patching sessions (should be none):\n   SELECT COUNT(*) FROM AD_ADOP_SESSIONS WHERE STATUS IN ('N', 'P');\n   -- Result should be 0\n\n3. Run database pre-clone:\n   Set environment:\n   source /u01/oracle/PROD/apps/apps_st/appl/APPSPROD_prod-db01.env\n\n   Execute:\n   perl $ORACLE_HOME/appsutil/scripts/<CONTEXT_NAME>/adpreclone.pl dbTier\n\n   This generates adpreclone logs in $ORACLE_HOME/appsutil/log/\n   Review for any ERROR or WARNING messages.\n\n4. Verify DB block size and character set:\n   SELECT VALUE FROM NLS_DATABASE_PARAMETERS\n   WHERE PARAMETER IN ('NLS_CHARACTERSET','DB_BLOCK_SIZE');\n\n   Note these values - the test database must match.\n\nSTEP 1.2: APPLICATION TIER PRE-CLONE (on prod-app01, as applmgr user)\n-----------\n\n1. Source the apps environment:\n   source /u01/oracle/PROD/apps/apps_st/appl/APPSPROD_prod-app01.env\n\n2. Note the current context file location:\n   echo $CONTEXT_FILE\n   -- Typical path: /u01/oracle/PROD/apps/apps_st/inst/apps/APPSPROD_prod-app01/appl/admin/APPSPROD_prod-app01.xml\n\n3. Stop all application services:\n   $ADMIN_SCRIPTS_HOME/adstpall.sh apps/<apps_password>\n\n   Verify all services are down:\n   ps -ef | grep -E \"FNDLIBR|FNDSM|oacore|oafm|forms|ohs\" | grep -v grep\n   -- Should return no processes\n\n4. Run application pre-clone:\n   perl $ADMIN_SCRIPTS_HOME/adpreclone.pl appsTier\n\n   This prepares APPL_TOP and INST_TOP for cloning.\n   Review logs in $APPL_TOP/admin/<SID>/log/ for any errors.\n\nSTEP 1.3: COPY / BACKUP SOURCE FILES (on prod-app01 and prod-db01)\n-----------\n\nYou must copy the following from production to test:\n\nFROM prod-app01 (as applmgr):\n  - $APPL_TOP directory\n  - $INST_TOP directory\n  Example paths:\n    /u01/oracle/PROD/apps/apps_st/appl        (APPL_TOP)\n    /u01/oracle/PROD/apps/apps_st/inst         (INST_TOP)\n\n  Copy method (choose one):\n  a) tar -czf /backup/appl_top_PROD.tar.gz $APPL_TOP\n     tar -czf /backup/inst_top_PROD.tar.gz $INST_TOP\n     scp /backup/*.tar.gz applmgr@test-app01:/tmp/\n\n  b) NFS mount (if available)\n     Mount prod filesystem on test server and copy live\n\nFROM prod-db01 (as oracle):\n  - $ORACLE_HOME directory (the database Oracle Home)\n  - Database datafiles and control files\n\n  Copy method:\n  a) Backup via RMAN:\n     rman target /\n     BACKUP DATABASE PLUS ARCHIVELOG;\n     -- Restore on test database (see Step 2.2)\n\n  b) Or tar the entire ORACLE_HOME:\n     cd /u01/oracle\n     tar -czf /backup/db_ORACLE_HOME_PROD.tar.gz PROD\n     scp /backup/db_ORACLE_HOME_PROD.tar.gz oracle@test-db01:/tmp/\n\n================================================================================\nPHASE 2: TARGET SYSTEM PREPARATION\n================================================================================\n\nSTEP 2.1: TARGET INFRASTRUCTURE SETUP (on test-app01 and test-db01)\n-----------\n\nOn test-app01:\n  - Ensure Linux OS version and patch level match prod-app01\n  - Create directory structure (owned by applmgr):\n    mkdir -p /u01/oracle/TEST/apps/apps_st/appl\n    mkdir -p /u01/oracle/TEST/apps/apps_st/inst\n  - Verify sufficient disk space (at least 1.5x source size)\n\nOn test-db01:\n  - Ensure Linux OS version matches prod-db01\n  - Oracle database software installed (same version as prod-db01)\n  - Create data directory:\n    mkdir -p /u01/oradata/TEST\n  - Verify 2-3x database size available\n\nSTEP 2.2: RESTORE DATABASE ON test-db01\n-----------\n\nOption A: RMAN Restore (Recommended)\n  1. Place RMAN backup files in accessible location\n  2. Create new init.ora for TEST database:\n     *.db_name=TEST\n     *.memory_target=<same_as_prod>\n     *.processes=<same_as_prod>\n     *.db_recovery_file_dest=/u01/oradata/TEST\n\n  3. Restore database:\n     rman>\n     RESTORE DATABASE FROM BACKUP;\n     RECOVER DATABASE;\n     ALTER DATABASE OPEN RESETLOGS;\n\nOption B: File-Level Copy\n  1. Extract tar files on test-db01:\n     cd /u01/oracle\n     tar -xzf /tmp/db_ORACLE_HOME_PROD.tar.gz\n\n  2. Copy source database files to /u01/oradata/TEST\n     (from prod-db01 or from backup)\n\n  3. Create spfile for TEST from source (edit SID references)\n\nSTEP 2.3: UPDATE DNS AND NETWORK CONFIGURATION\n-----------\n\nOn test-db01:\n  - Update /etc/hosts or DNS with test-db01 hostname\n  - Update listener.ora for TEST listener:\n    Listener configuration should include:\n    SID_LIST_LISTENER =\n      (SID_LIST =\n        (SID_DESC =\n          (SID_NAME = TEST)\n          (ORACLE_HOME = /u01/oracle/TEST)\n        )\n      )\n  - Start listener:\n    lsnrctl start\n\nOn test-app01:\n  - Update /etc/hosts or DNS with test-app01 hostname\n  - Create tnsnames.ora entry for TEST database:\n    TEST =\n      (DESCRIPTION =\n        (ADDRESS = (PROTOCOL = TCP)(HOST = test-db01)(PORT = 1521))\n        (CONNECT_DATA =\n          (SERVICE_NAME = TEST)\n        )\n      )\n\n================================================================================\nPHASE 3: EXTRACT AND PREPARE FILES ON TARGET\n================================================================================\n\nSTEP 3.1: EXTRACT APPS FILES ON test-app01 (as applmgr)\n-----------\n\n1. Extract APPL_TOP:\n   cd /u01/oracle/TEST/apps/apps_st\n   tar -xzf /tmp/appl_top_PROD.tar.gz\n\n   (If extracted with parent directory, move contents):\n   mv appl appl_backup\n   ln -s /u01/oracle/PROD/apps/apps_st/appl appl\n\n2. Extract INST_TOP:\n   cd /u01/oracle/TEST/apps/apps_st\n   tar -xzf /tmp/inst_top_PROD.tar.gz\n\n3. Verify directory ownership:\n   chown -R applmgr:dba /u01/oracle/TEST/apps/apps_st/appl\n   chown -R applmgr:dba /u01/oracle/TEST/apps/apps_st/inst\n\nSTEP 3.2: VERIFY DATABASE IS READY\n-----------\n\nOn test-db01 (as oracle):\n  sqlplus / as sysdba\n  SELECT STATUS FROM V$INSTANCE;\n  -- Must show: OPEN\n\n  tnsping TEST\n  -- Must show: OK\n\n================================================================================\nPHASE 4: RUN CLONE CONFIGURATION (adcfgclone)\n================================================================================\n\nSTEP 4.1: DATABASE TIER CLONING (on test-db01, as oracle)\n-----------\n\n1. Ensure ORACLE_HOME points to TEST database home:\n   export ORACLE_HOME=/u01/oracle/TEST\n\n2. Run adcfgclone for database tier:\n   perl $ORACLE_HOME/appsutil/clone/bin/adcfgclone.pl dbTier\n\n   The script will prompt for:\n   - Target database SID: TEST\n   - Target hostname: test-db01\n   - Target ORACLE_BASE: /u01/oracle\n   - Database password for sys and system users (use prod values or new values)\n\n   This step will:\n   - Regenerate database-side context files\n   - Update init.ora parameters\n   - Create new DB links if needed\n   - Generate adautocfg logs\n\n   Expected output:\n   \"The database tier cloning has completed successfully\"\n\n3. Review cloning log:\n   cat $ORACLE_HOME/appsutil/log/adcfgclone_<date>.log\n   Check for ERROR or FAILURE messages.\n\nSTEP 4.2: APPLICATION TIER CLONING (on test-app01, as applmgr)\n-----------\n\n1. Source the TEST environment:\n   source /u01/oracle/TEST/apps/apps_st/appl/APPSTEST_test-app01.env\n\n   Note: The environment file name will be auto-generated and include TEST SID\n   and test-app01 hostname.\n\n2. Run adcfgclone for application tier:\n   perl $APPL_TOP/admin/adcfgclone.pl appsTier\n\n   The script will prompt for the following context file parameters:\n\n   CRITICAL PARAMETERS TO UPDATE:\n   -------\n   - s_systemname:           TEST (source will be PROD)\n   - s_hostname:             test-app01 (source: prod-app01)\n   - s_dbhost:               test-db01 (source: prod-db01)\n   - s_dbport:               1521 (verify same as source)\n   - s_webport:              8000 (or same as prod; must not conflict)\n   - s_apps_jdbc_connect_alias:\n                             TEST (match new SID)\n   - s_appsServerId:         TESTAPPS (ensure unique)\n   - s_fnd_top_dir:          /u01/oracle/TEST/apps/apps_st/appl/fnd\n                             (verify path)\n   - s_ad_top_dir:           /u01/oracle/TEST/apps/apps_st/appl/ad\n                             (verify path)\n   - s_common_top_dir:       /u01/oracle/TEST/apps/apps_st/common\n\n   The script will regenerate:\n   - All context files for TEST\n   - All environment scripts (.env files)\n   - Apache/OHS configuration\n   - Forms configuration\n   - Database connection strings\n\n3. Review cloning log:\n   cat $APPL_TOP/admin/<SID>/log/adcfgclone_<date>.log\n   Check for ERROR or FAILURE messages.\n\n================================================================================\nPHASE 5: POST-CLONE CONFIGURATION\n================================================================================\n\nSTEP 5.1: DATABASE TIER POST-CLONE (on test-db01, as oracle)\n-----------\n\n1. Run Database AutoConfig:\n   Set environment:\n   source /u01/oracle/TEST/apps/apps_st/appl/APPSTEST_test-db01.env\n\n   Note: The path should include TEST SID and test-db01 hostname\n\n   Run AutoConfig:\n   $ORACLE_HOME/appsutil/scripts/<NEW_CONTEXT_NAME>/adautocfg.sh\n\n   This regenerates:\n   - init.ora with correct parameters for TEST environment\n   - Database background process scripts\n   - Listener configuration\n\n   Expected: \"AutoConfig completed successfully\"\n   Review: $INST_TOP/admin/log/adconfig_<date>.log\n\n2. Regenerate appsutil.zip:\n   perl $AD_TOP/bin/admkappsutil.pl\n\n   This ensures the apps tier has the updated database configuration.\n   Verify file created: ls -lah $ORACLE_HOME/appsutil/appsutil.zip\n\n3. Verify database connectivity:\n   tnsping TEST\n   sqlplus apps/apps_password@TEST\n   SELECT RELEASE_NAME FROM FND_PRODUCT_GROUPS;\n   -- Should show: 12.1.x\n\nSTEP 5.2: APPLICATION TIER POST-CLONE (on test-app01, as applmgr)\n-----------\n\n1. Source the TEST apps environment:\n   source /u01/oracle/TEST/apps/apps_st/appl/APPSTEST_test-app01.env\n\n2. Run Application Tier AutoConfig:\n   $ADMIN_SCRIPTS_HOME/adautocfg.sh apps/<apps_password>\n\n   This regenerates:\n   - All .env environment files\n   - Apache/OHS configuration files\n   - Forms configuration\n   - JSP compilation settings\n   - All port configurations\n\n   Expected: \"AutoConfig completed successfully\"\n   Review: $INST_TOP/admin/log/adconfig_<date>.log\n\n   Note: This step should run WITHOUT ERRORS. If errors occur, debug:\n     xmllint --noout $CONTEXT_FILE\n     Check for mismatched hostname, port, or SID values\n\n3. Start all application services:\n   $ADMIN_SCRIPTS_HOME/adstrtal.sh apps/<apps_password>\n\n   Expected steps:\n   a) Database listeners start\n   b) Database instances open\n   c) Apache / OHS starts\n   d) Forms server starts\n   e) oacore (Forms/OAF) starts\n   f) oafm starts\n   g) Concurrent Manager starts\n\n   Typical startup time: 5-15 minutes depending on system load\n\n   Monitor startup:\n   ps -ef | grep -E \"FNDLIBR|FNDSM|oacore|oafm|forms|ohs\" | grep -v grep\n\n   Verify all expected processes appear.\n\n4. Verify EBS Login Page Loads:\n   Open browser:\n   http://test-app01:8000/\n\n   You should see the Oracle EBS login page.\n   If port differs, adjust URL accordingly.\n\n   If page doesn't load:\n   - Check Apache error log: $INST_TOP/logs/ora/10.1.3/Apache/error_log\n   - Verify port in context: grep s_webport $CONTEXT_FILE\n   - Restart Apache: $ADMIN_SCRIPTS_HOME/adapcctl.sh restart\n\n5. Test Forms and OAF Access:\n   Log in with SYSADMIN user (password: initial password from prod)\n   Navigate to: Functional Administrator > Core Services > Test Page\n\n   Verify OAF pages load correctly.\n   Check Forms functionality if applicable.\n\n================================================================================\nPHASE 6: POST-CLONE FUNCTIONAL ADJUSTMENTS\n================================================================================\n\nSTEP 6.1: UPDATE DATABASE USERS AND SECURITY\n-----------\n\n1. Change production passwords if TEST environment is non-prod:\n\n   sqlplus / as sysdba\n\n   ALTER USER sys IDENTIFIED BY <new_sys_password>;\n   ALTER USER system IDENTIFIED BY <new_system_password>;\n   ALTER USER sys IDENTIFIED BY <new_sys_password>;\n   COMMIT;\n\n2. Change apps user password:\n   sqlplus apps/<current_password>\n\n   BEGIN\n     FND_USER_PKG.ChangePassword(username => 'APPS', newpassword => '<new_password>');\n     COMMIT;\n   END;\n   /\n\n3. Change sysadmin password:\n   -- Log in to EBS as SYSADMIN via UI, or:\n   BEGIN\n     FND_USER_PKG.ChangePassword(username => 'SYSADMIN', newpassword => '<new_password>');\n     COMMIT;\n   END;\n   /\n\nSTEP 6.2: DISABLE PRODUCTION USERS (SO PROD USERS CAN'T ACCESS TEST)\n-----------\n\nsqlplus apps/apps_password@TEST\nSET ECHO ON\nSET FEEDBACK ON\n\nUPDATE FND_USER\nSET END_DATE = SYSDATE\nWHERE USER_NAME NOT IN ('SYSADMIN','GUEST','ORACLE','APPS')\nAND   (END_DATE IS NULL OR END_DATE > SYSDATE);\n\nCOMMIT;\n\nSELECT USER_NAME, END_DATE FROM FND_USER\nWHERE END_DATE IS NOT NULL\nORDER BY USER_NAME;\n\n-- Verify users are disabled\n\nSTEP 6.3: UPDATE FND_NODES\n-----------\n\nThe cloned system may still reference the production hostname in FND_NODES.\nUpdate this to test hostname:\n\nsqlplus apps/apps_password@TEST\n\n-- Check current nodes:\nSELECT NODE_NAME, SERVER_ADDRESS, SUPPORT_FORMS, SUPPORT_WEB, SUPPORT_BATCH\nFROM FND_NODES;\n\n-- Remove old prod-app01 node if present:\nDELETE FROM FND_NODES WHERE NODE_NAME = 'prod-app01';\nCOMMIT;\n\n-- Re-run AutoConfig to register test-app01:\n-- (back on test-app01 as applmgr)\n$ADMIN_SCRIPTS_HOME/adautocfg.sh apps/<apps_password>\n\n-- Verify:\nSELECT NODE_NAME, SERVER_ADDRESS FROM FND_NODES;\n-- Should show: test-app01\n\nSTEP 6.4: DISABLE OUTBOUND EMAIL AND NOTIFICATIONS\n-----------\n\nTo prevent TEST from sending emails to production recipients:\n\nsqlplus apps/apps_password@TEST\n\nUPDATE FND_PROFILE_OPTION_VALUES\nSET PROFILE_OPTION_VALUE = NULL\nWHERE PROFILE_OPTION_ID IN (\n  SELECT PROFILE_OPTION_ID FROM FND_PROFILE_OPTIONS\n  WHERE PROFILE_OPTION_NAME IN (\n    'NOTIFICATION_MAILER_HOST',\n    'NOTIFICATION_MAILER_PORT',\n    'APPS_FRAMEWORK_AGENT_URL'\n  )\n);\nCOMMIT;\n\n-- Or disable via UI:\n-- Functional Administrator > Core Services > Profile Options\n-- Search: NOTIFICATION_MAILER_* and set to blank\n\nSTEP 6.5: DISABLE OR ADJUST SCHEDULED CONCURRENT REQUESTS\n-----------\n\nIn production, you likely have scheduled concurrent requests that should NOT\nrun in test. To disable them:\n\nsqlplus apps/apps_password@TEST\n\n-- Find scheduled requests:\nSELECT CONCURRENT_REQUEST_ID, CONCURRENT_PROGRAM_NAME, REQUESTED_START_DATE\nFROM FND_CONCURRENT_REQUESTS\nWHERE REQUEST_TYPE = 'P'  -- Program type\nAND   PHASE_CODE = 'P'   -- Pending\nAND   REQUESTED_START_DATE > SYSDATE;\n\n-- Disable them:\nUPDATE FND_CONCURRENT_REQUESTS\nSET PHASE_CODE = 'C', STATUS_CODE = 'C'\nWHERE REQUEST_TYPE = 'P' AND PHASE_CODE = 'P'\nAND   REQUESTED_START_DATE > SYSDATE;\nCOMMIT;\n\nSTEP 6.6: VALIDATE CONFIGURATION\n-----------\n\nRun the configuration validation script:\n\nOn test-app01 (as applmgr):\nsource /u01/oracle/TEST/apps/apps_st/appl/APPSTEST_test-app01.env\n\nperl $FND_TOP/patch/115/bin/txkCfgChck.pl \\\n  -contextfile=$CONTEXT_FILE -outfile=/tmp/cfgchck.html\n\nReview the HTML output for any warnings or errors:\ncat /tmp/cfgchck.html\n\nExpected: All checks should PASS. Most common issues:\n  - Hostname mismatch\n  - Port conflicts\n  - Database connectivity\n  - File permissions\n\n================================================================================\nPHASE 7: VERIFICATION AND TESTING\n================================================================================\n\nSTEP 7.1: TEST END-TO-END FUNCTIONALITY\n-----------\n\n1. Log in as SYSADMIN:\n   URL: http://test-app01:8000/\n   Username: SYSADMIN\n   Password: (from your environment)\n\n2. Submit a sample concurrent request:\n   Functional Administrator > Core Services > Requests > Submit New Request\n   Select: \"Inventory Organization Report\" (or any simple report)\n   Click Submit\n\n   Monitor request:\n   SELECT REQUEST_ID, PHASE_CODE, STATUS_CODE, COMPLETION_TEXT\n   FROM FND_CONCURRENT_REQUESTS\n   WHERE REQUEST_ID = <request_id>;\n\n   Expected: Status moves from Pending -> Running -> Complete/Error\n\n3. Verify Concurrent Manager is running:\n   On test-app01 (as applmgr):\n   $ADMIN_SCRIPTS_HOME/adcmctl.sh status apps/<password>\n\n   Or query:\n   sqlplus apps/apps_password@TEST\n   SELECT CONCURRENT_QUEUE_NAME, RUNNING_PROCESSES, MAX_PROCESSES\n   FROM FND_CONCURRENT_QUEUES_VL\n   WHERE MANAGER_TYPE = '1';\n\n4. Test Forms and OAF pages:\n   Navigate to any Form or OAF page via the UI\n   Verify forms load and respond to input\n   Check for JavaScript errors in browser console\n\nSTEP 7.2: CHECK ALERT LOG AND LOGS\n-----------\n\nDatabase Alert Log:\ntail -100 $ORACLE_BASE/diag/rdbms/test/TEST/trace/alert_TEST.log\n\nApplication Tier Logs:\nls -ltr $APPLCSF/log/ | tail -20\ntail -50 $APPLCSF/log/FNDLIBR.log   # Concurrent Manager log\ntail -50 $INST_TOP/logs/ora/10.1.3/Apache/error_log  # Apache error log\n\nExpected: Minimal errors, mostly INFO and WARNING messages.\nCritical errors must be investigated and resolved.\n\n================================================================================\nSTEP-BY-STEP SUMMARY TABLE\n================================================================================\n\nPhase               | Location      | User      | Key Command\n--------------------|---------------|-----------|--------------------------------------------------\nPre-clone DB        | prod-db01     | oracle    | adpreclone.pl dbTier\nPre-clone Apps      | prod-app01    | applmgr   | adpreclone.pl appsTier\nCopy Files          | prod-* / test-* | root/sudo | tar/scp/rsync\nExtract on Target   | test-app01/db | applmgr/oracle | tar -xzf\nClone DB            | test-db01     | oracle    | adcfgclone.pl dbTier\nClone Apps          | test-app01    | applmgr   | adcfgclone.pl appsTier\nPost-clone DB Config| test-db01     | oracle    | adautocfg.sh + admkappsutil.pl\nPost-clone Apps Config| test-app01  | applmgr   | adautocfg.sh\nStart Services      | test-app01    | applmgr   | adstrtal.sh apps/<pw>\nFunctional Setup    | test-db01     | oracle    | SQL updates (users, nodes, email)\nValidation          | test-app01    | applmgr   | txkCfgChck.pl\nTesting             | Browser       | SYSADMIN  | Log in, submit request, verify CM\n\n================================================================================\nESTIMATED TIMING\n================================================================================\n\nTask                                    Estimated Duration\n-----------------------------------------------------------------\nSource pre-clone (DB + Apps)            30-60 minutes\nFile copy/transfer (depends on size)    1-4 hours\nDatabase restore/extraction             1-2 hours\nadcfgclone database tier                15-30 minutes\nadcfgclone application tier             20-40 minutes\nPost-clone AutoConfig (both tiers)      30-45 minutes\nService startup and stabilization       10-20 minutes\nFunctional testing and adjustments      30-60 minutes\n-----------------------------------------------------------------\nTOTAL ESTIMATED TIME:                   4-10 hours\n\nActual time depends on:\n  - File transfer speed and method (NFS is faster than SCP/rsync)\n  - Database size\n  - Network connectivity\n  - System resources and concurrent activity\n  - Any issues or re-runs needed\n\n================================================================================\nCRITICAL CHECKLIST BEFORE GOING LIVE WITH TEST CLONE\n================================================================================\n\n[ ] Database is open and accessible (sqlplus apps/apps@TEST works)\n[ ] All application services started successfully (adstrtal.sh completed)\n[ ] EBS login page loads at http://test-app01:8000/\n[ ] Can log in as SYSADMIN\n[ ] Concurrent Manager is running and accepting requests\n[ ] Forms and OAF pages load without errors\n[ ] Production users are disabled (END_DATE set)\n[ ] Outbound email is disabled or redirected\n[ ] Scheduled jobs are disabled\n[ ] FND_NODES shows correct test hostname only\n[ ] Configuration validation (txkCfgChck.pl) passes\n[ ] Sample concurrent request completes successfully\n[ ] No critical errors in alert log or application logs\n[ ] Filesystem permissions are correct (applmgr/oracle ownership)\n[ ] Database and app tier hostnames updated in all references\n\n================================================================================\nROLLBACK / RECOVERY\n================================================================================\n\nIf the clone fails or you need to restart:\n\n1. Stop all services on test systems:\n   $ADMIN_SCRIPTS_HOME/adstpall.sh apps/<pw>  (on test-app01)\n\n2. Roll back to last known good state:\n   - If adcfgclone failed: restore from backup and re-run\n   - If AutoConfig failed: fix context file and re-run AutoConfig\n   - If services won't start: check logs and fix root cause\n\n3. Most common issues:\n   - Hostname/SID mismatch in context file \u2192 fix and re-run AutoConfig\n   - Database not open \u2192 open database manually with SQL*Plus\n   - Port conflicts \u2192 change s_webport in context and re-run AutoConfig\n   - Permission issues \u2192 verify applmgr/oracle ownership on directories\n\n================================================================================\nADDITIONAL RESOURCES\n================================================================================\n\nKey EBS DBA SQL Queries:\n  - Check applied patches: SELECT BUG_NUMBER, CREATION_DATE FROM AD_BUGS;\n  - Check product versions: SELECT APPLICATION_SHORT_NAME, PATCH_LEVEL\n                            FROM FND_PRODUCT_INSTALLATIONS;\n  - Check FND users: SELECT USER_NAME, LAST_LOGON_DATE FROM FND_USER;\n  - Check nodes: SELECT NODE_NAME, SERVER_ADDRESS FROM FND_NODES;\n\nLog File Locations:\n  - Concurrent request output: $APPLCSF/log/<request_id>.log\n  - AutoConfig log: $INST_TOP/admin/log/adconfig*.log\n  - Database alert log: $ORACLE_BASE/diag/rdbms/test/TEST/trace/alert_TEST.log\n  - Apache error log: $INST_TOP/logs/ora/10.1.3/Apache/error_log\n\nEnvironment Variables:\n  - $APPL_TOP: /u01/oracle/TEST/apps/apps_st/appl\n  - $INST_TOP: /u01/oracle/TEST/apps/apps_st/inst\n  - $CONTEXT_FILE: $INST_TOP/appl/admin/<CONTEXT_NAME>.xml\n  - $ORACLE_HOME: /u01/oracle/TEST\n  - $ADMIN_SCRIPTS_HOME: $INST_TOP/admin/scripts\n\n================================================================================\nFINAL NOTES\n================================================================================\n\n1. Always test the clone process in a non-critical environment first.\n\n2. The clone takes the PRODUCTION data snapshot at the time of file copy.\n   Any changes made to production after that point are NOT reflected in TEST.\n\n3. Document the specific values used during cloning (ports, passwords, etc.)\n   for future reference and disaster recovery.\n\n4. After cloning, ensure TEST and PROD are on separate networks or firewalls\n   to prevent accidental data/network contamination.\n\n5. Set up monitoring and backups for the TEST instance appropriate to its\n   criticality level (typically less frequent than production).\n\n6. Consider implementing a regular refresh cycle (monthly/quarterly) to keep\n   TEST synchronized with current production data and configurations.\n\nEnd of Cloning Guide\n"}, {"name": "timing.json", "type": "text", "content": "{\n  \"cloning_phase\": \"Oracle EBS R12.1 Production to Test Clone\",\n  \"scenario\": \"PROD (prod-app01/prod-db01) -> TEST (test-app01/test-db01)\",\n  \"duration_ms\": 28800000,\n  \"duration_hours\": 8,\n  \"breakdown\": {\n    \"source_pre_clone_db_tier_minutes\": 45,\n    \"source_pre_clone_apps_tier_minutes\": 30,\n    \"file_transfer_copy_minutes\": 120,\n    \"target_database_restore_extraction_minutes\": 90,\n    \"target_infrastructure_setup_minutes\": 30,\n    \"database_tier_adcfgclone_minutes\": 25,\n    \"application_tier_adcfgclone_minutes\": 35,\n    \"database_autoconfig_appsutil_minutes\": 40,\n    \"application_autoconfig_minutes\": 35,\n    \"service_startup_stabilization_minutes\": 20,\n    \"functional_testing_adjustments_minutes\": 45\n  },\n  \"total_minutes\": 480,\n  \"total_hours\": 8.0,\n  \"notes\": \"Estimates based on mid-size R12.1 instance (100-500GB database). Actual timing varies with file transfer speed, system resources, and any remediation needed. File transfer is typically the longest phase; using NFS mount is faster than SCP/rsync.\",\n  \"variables_affecting_duration\": [\n    \"Database size (larger = longer restore/copy)\",\n    \"Network bandwidth (NFS faster than SCP)\",\n    \"Concurrent system load\",\n    \"Storage I/O performance\",\n    \"Number of custom configurations to adjust\",\n    \"Whether errors occur requiring remediation\"\n  ],\n  \"fastest_scenario_hours\": 5,\n  \"longest_scenario_hours\": 12,\n  \"confidence_level\": \"high - based on standard R12.1 cloning procedure\"\n}\n"}], "grading": {"eval_id": 1, "eval_name": "r121-production-clone", "run_type": "with_skill", "expectations": [{"text": "Response covers adpreclone.pl on the source system (both dbTier and appsTier)", "passed": true, "evidence": "Step 1.1 explicitly states 'perl $ORACLE_HOME/appsutil/scripts/<CONTEXT_NAME>/adpreclone.pl dbTier' (line 32) and Step 1.2 states 'perl $ADMIN_SCRIPTS_HOME/adpreclone.pl appsTier' (line 61)"}, {"text": "Response covers adcfgclone.pl on the target system", "passed": true, "evidence": "Step 4.1 states 'perl $ORACLE_HOME/appsutil/clone/bin/adcfgclone.pl dbTier' (line 222) and Step 4.2 states 'perl $APPL_TOP/admin/adcfgclone.pl appsTier' (line 253)"}, {"text": "Response mentions specific context file parameters to update (e.g., s_systemname, s_hostname, s_dbhost or equivalent)", "passed": true, "evidence": "Lines 257-272 list CRITICAL PARAMETERS including s_systemname, s_hostname, s_dbhost, s_dbport, s_webport, s_apps_jdbc_connect_alias, s_appsServerId, s_fnd_top_dir, s_ad_top_dir, s_common_top_dir"}, {"text": "Response mentions running AutoConfig on the target after cloning", "passed": true, "evidence": "Step 5.1 'Run Database AutoConfig' (line 291) with command '$ORACLE_HOME/appsutil/scripts/<NEW_CONTEXT_NAME>/adautocfg.sh' (line 298) and Step 5.2 'Run Application Tier AutoConfig' (line 326) with command '$ADMIN_SCRIPTS_HOME/adautocfg.sh' (line 327)"}, {"text": "Response includes at least one post-clone cleanup step (e.g., disable prod users, update passwords, or disable email/notifications)", "passed": true, "evidence": "Step 6.1 covers changing passwords for sys, system, apps, and sysadmin users (lines 385-412); Step 6.2 disables production users with 'UPDATE FND_USER SET END_DATE = SYSDATE' (lines 414-432); Step 6.4 disables outbound email (lines 458-480)"}], "overall_pass_rate": 1.0, "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}}}, {"id": "eval-1-r121-production-clone-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "response.txt", "type": "text", "content": "ORACLE EBS R12.1 PRODUCTION CLONE GUIDE\nComplete Process for Cloning PROD (prod-app01/prod-db01) to TEST (test-app01/test-db01)\n\n================================================================================\nPHASE 1: PRE-CLONE PLANNING AND PREPARATION\n================================================================================\n\n1. PREREQUISITES AND VALIDATION\n   - Verify current EBS R12.1 version and patch level on PROD\n   - Confirm available disk space on test-db01 for database clone (at least 1.5x PROD DB size)\n   - Confirm available disk space on test-app01 for application tier (at least 1.5x PROD App size)\n   - Verify network connectivity between all servers (prod-app01, prod-db01, test-app01, test-db01)\n   - Ensure database backup of PROD instance exists and is verified\n   - Document current PROD environment configuration (database parameters, listener.ora, etc.)\n   - Create maintenance window notification for stakeholders\n   - Verify you have SYSDBA privileges on both prod-db01 and test-db01\n\n2. BACKUP STRATEGY\n   - Create a full RMAN backup of PROD database on prod-db01\n   - Verify backup integrity by running RMAN CROSSCHECK commands\n   - Copy backup files to test-db01 or prepare for restoration\n   - Alternatively, create a full export or use database duplication\n\n3. CAPACITY PLANNING\n   - Check available memory on test-db01 (SGA_TARGET, PGA_AGGREGATE_TARGET)\n   - Verify CPU cores available on test-app01 and test-db01\n   - Confirm FRA (Flash Recovery Area) space on test-db01 if using RMAN\n   - Check listener port availability on test-db01\n\n================================================================================\nPHASE 2: DATABASE CLONING (prod-db01 to test-db01)\n================================================================================\n\nOPTION A: RMAN DUPLICATE (RECOMMENDED FOR R12.1)\n\nStep 1: Prepare the Target Database Parameters\n   On test-db01 as oracle user:\n\n   a) Create init parameter file for TEST:\n      - Start with PROD's init file: initPROD.ora\n      - Create initTEST.ora in $ORACLE_HOME/dbs/\n\n   b) Edit initTEST.ora and modify critical parameters:\n      *.db_name='TEST'\n      *.memory_target=0  (or set SGA_TARGET and PGA_AGGREGATE_TARGET separately)\n      *.sga_target=4G  (adjust based on test-db01 available memory)\n      *.pga_aggregate_target=2G  (adjust based on available memory)\n      *.db_recovery_file_dest='/u01/oradata/test/fra'\n      *.db_recovery_file_dest_size=500G  (adjust to available space)\n      *.log_archive_dest_1='LOCATION=/u01/oradata/test/archive/ VALID_FOR=(ALL_LOGFILES,ALL_ROLES) DB_UNIQUE_NAME=TEST'\n      *.audit_file_dest='/u01/oradata/test/audit'\n      *.background_dump_dest='/u01/oradata/test/trace'\n      *.user_dump_dest='/u01/oradata/test/trace'\n      *.control_files='/u01/oradata/test/control01.ctl','/u02/oradata/test/control02.ctl','/u03/oradata/test/control03.ctl'\n\n      Remove or comment out:\n      - EBS-specific parameters for PROD (like instance-specific names)\n      - Keep EBS parameters related to database behavior\n\nStep 2: Create Directory Structure on test-db01\n   mkdir -p /u01/oradata/test/archive\n   mkdir -p /u01/oradata/test/fra\n   mkdir -p /u01/oradata/test/trace\n   mkdir -p /u01/oradata/test/audit\n   chown -R oracle:oinstall /u01/oradata/test\n   chmod 750 /u01/oradata/test\n\nStep 3: Perform RMAN Database Duplication\n   On prod-db01, ensure PROD database is in ARCHIVELOG mode:\n   sqlplus / as sysdba\n   archive log list;\n   -- If not in archivelog mode, run:\n   -- shutdown immediate;\n   -- startup mount;\n   -- alter database archivelog;\n   -- alter database open;\n   exit;\n\n   On test-db01 as oracle user:\n   rman target sys/password@PROD auxiliary /\n\n   Within RMAN prompt:\n   DUPLICATE TARGET DATABASE TO TEST NOFILENAMECHECK\n   PFILE='/u01/app/oracle/product/12.1.0/db_1/dbs/initTEST.ora';\n\n   This command will:\n   - Connect to PROD as source database\n   - Create a clone of all datafiles and redo logs on test-db01\n   - Create new control files for TEST\n   - Start the TEST database automatically\n\n   Expected duration: 30 minutes to several hours depending on PROD database size\n\nStep 4: Verify Database Clone\n   sqlplus / as sysdba\n   SELECT name, open_mode FROM v$database;\n   -- Should show: TEST and READ WRITE\n\n   SELECT INSTANCE_NAME FROM v$instance;\n   -- Should show: test\n\n   column name format a30\n   SELECT file#, name FROM v$datafile;\n   -- Verify all datafiles are present\n\n   exit;\n\nOPTION B: COLD BACKUP AND RESTORE (IF RMAN DUPLICATION NOT AVAILABLE)\n\nStep 1: Shutdown PROD Database\n   On prod-db01:\n   sqlplus / as sysdba\n   SHUTDOWN IMMEDIATE;\n   exit;\n\nStep 2: Copy All Datafiles, Control Files, and Redo Logs\n   On prod-db01 as oracle user:\n   # Identify all datafile locations from prod spfile\n   sqlplus / as sysdba\n   SELECT name FROM v$datafile;\n   SELECT name FROM v$controlfile;\n   exit;\n\n   Create tar archive of all database files:\n   cd /u01/oradata\n   tar -cf /backup/prod_db_backup.tar .\n\n   Transfer to test-db01:\n   scp /backup/prod_db_backup.tar oracle@test-db01:/u01/oradata/\n\nStep 3: Extract and Rename on test-db01\n   On test-db01 as oracle user:\n   cd /u01/oradata\n   tar -xf prod_db_backup.tar\n\n   Rename PROD files to TEST structure:\n   mv proddata01.dbf testdata01.dbf\n   mv proddata02.dbf testdata02.dbf\n   # (rename all datafiles)\n\n   For control files:\n   mv control01.ctl.prod control01.ctl\n   mv control02.ctl.prod control02.ctl\n   mv control03.ctl.prod control03.ctl\n\nStep 4: Create and Modify PFILE\n   Copy initPROD.ora to initTEST.ora and modify as in Option A Step 1b\n\nStep 5: Start Database in NOMOUNT Mode\n   export ORACLE_SID=TEST\n   sqlplus / as sysdba\n   STARTUP NOMOUNT PFILE='/u01/app/oracle/product/12.1.0/db_1/dbs/initTEST.ora';\n   exit;\n\nStep 6: Use RMAN to Restore Control Files and Open Database\n   rman target /\n\n   RESTORE CONTROLFILE FROM '/u01/oradata/test/control01.ctl';\n   ALTER DATABASE MOUNT;\n   RESTORE DATABASE;\n   RECOVER DATABASE;\n   ALTER DATABASE OPEN RESETLOGS;\n   exit;\n\n================================================================================\nPHASE 3: APPLICATION TIER CLONING (prod-app01 to test-app01)\n================================================================================\n\nStep 1: Prepare test-app01 Directory Structure\n   On test-app01 as root user:\n\n   Verify disk space:\n   df -h\n\n   Create EBS directory structure (if not already present):\n   mkdir -p /u01/install/APPS\n   mkdir -p /u01/install/EBIZapps\n   mkdir -p /u01/appl\n   mkdir -p /u01/oaprod\n   chown -R applmgr:dba /u01/install/\n   chown -R applmgr:dba /u01/appl/\n   chown -R applmgr:dba /u01/oaprod/\n\nStep 2: Copy PROD APPL_TOP to test-app01\n   On prod-app01 as applmgr user:\n\n   Run any pending patching first:\n   cd $APPL_TOP\n   adop -status\n\n   Archive the APPL_TOP:\n   cd /u01/install/APPS\n   tar -czf APPL_TOP_prod.tar.gz APPL_TOP/\n\n   Transfer to test-app01:\n   scp APPL_TOP_prod.tar.gz applmgr@test-app01:/u01/install/\n\nStep 3: Extract APPL_TOP on test-app01\n   On test-app01 as applmgr user:\n\n   cd /u01/install\n   tar -xzf APPL_TOP_prod.tar.gz\n\n   Rename the directory:\n   mv APPL_TOP APPL_TOP_test\n   # or keep naming convention consistent if renaming elsewhere\n\nStep 4: Copy ORACLE_HOME (Database Client) to test-app01\n   On prod-app01 as oracle user:\n\n   cd $ORACLE_HOME\n   tar -czf oh_prod.tar.gz .\n\n   Transfer to test-app01:\n   scp oh_prod.tar.gz oracle@test-app01:/u01/oaprod/\n\nStep 5: Extract ORACLE_HOME on test-app01\n   On test-app01 as oracle user:\n\n   cd /u01/oaprod\n   tar -xzf oh_prod.tar.gz\n\nStep 6: Copy COMMON_TOP (SHARED_ORACLE_HOME)\n   On prod-app01:\n\n   cd /u01/oaprod\n   tar -czf common_top_prod.tar.gz EBIZapps/\n\n   Transfer to test-app01:\n   scp common_top_prod.tar.gz applmgr@test-app01:/u01/oaprod/\n\nStep 7: Extract COMMON_TOP on test-app01\n   On test-app01 as applmgr user:\n\n   cd /u01/oaprod\n   tar -xzf common_top_prod.tar.gz\n\n================================================================================\nPHASE 4: POST-CLONE DATABASE CONFIGURATION\n================================================================================\n\nStep 1: Run Database Init Parameter Updates\n   On test-db01 as oracle user:\n\n   sqlplus / as sysdba\n\n   -- Update control file locations if changed\n   ALTER SYSTEM SET control_files='/u01/oradata/test/control01.ctl','/u02/oradata/test/control02.ctl','/u03/oradata/test/control03.ctl' SCOPE=SPFILE;\n\n   -- Set memory parameters for TEST environment\n   ALTER SYSTEM SET sga_target=4G SCOPE=SPFILE;\n   ALTER SYSTEM SET pga_aggregate_target=2G SCOPE=SPFILE;\n\n   -- Update archive destination\n   ALTER SYSTEM SET log_archive_dest_1='LOCATION=/u01/oradata/test/archive/ VALID_FOR=(ALL_LOGFILES,ALL_ROLES) DB_UNIQUE_NAME=TEST' SCOPE=SPFILE;\n\n   -- Update FRA destination\n   ALTER SYSTEM SET db_recovery_file_dest='/u01/oradata/test/fra' SCOPE=SPFILE;\n   ALTER SYSTEM SET db_recovery_file_dest_size=500G SCOPE=SPFILE;\n\n   -- Update audit destination\n   ALTER SYSTEM SET audit_file_dest='/u01/oradata/test/audit' SCOPE=SPFILE;\n\n   -- Disable any PROD-specific security policies\n   ALTER SYSTEM SET db_audit_trail=NONE SCOPE=SPFILE;\n\n   SHUTDOWN IMMEDIATE;\n   STARTUP;\n   exit;\n\nStep 2: Update Listener Configuration on test-db01\n   Edit $ORACLE_HOME/network/admin/listener.ora on test-db01:\n\n   LISTENER =\n     (DESCRIPTION_LIST =\n       (DESCRIPTION =\n         (ADDRESS = (PROTOCOL = TCP)(HOST = test-db01)(PORT = 1521))\n         (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC1521))\n       )\n     )\n\n   TEST_LISTENER =\n     (ADDRESS = (PROTOCOL = TCP)(HOST = test-db01)(PORT = 1521))\n\n   SID_LIST_LISTENER =\n     (SID_LIST =\n       (SID_DESC =\n         (SID_NAME = TEST)\n         (ORACLE_HOME = /u01/app/oracle/product/12.1.0/db_1)\n       )\n     )\n\nStep 3: Restart Listener\n   On test-db01:\n   lsnrctl stop\n   lsnrctl start\n\n   Verify:\n   lsnrctl services\n   -- Should show TEST instance\n\nStep 4: Update tnsnames.ora on test-app01\n   Edit $ORACLE_HOME/network/admin/tnsnames.ora on test-app01:\n\n   Add or update:\n   TEST =\n     (DESCRIPTION =\n       (ADDRESS = (PROTOCOL = TCP)(HOST = test-db01)(PORT = 1521))\n       (CONNECT_DATA =\n         (SERVICE_NAME = TEST)\n       )\n     )\n\n   Test connectivity:\n   sqlplus sys/password@TEST as sysdba\n   exit;\n\nStep 5: Update FRA and Archive Location\n   On test-db01:\n   mkdir -p /u01/oradata/test/archive\n   mkdir -p /u01/oradata/test/fra\n   chown -R oracle:oinstall /u01/oradata/test\n   chmod 750 /u01/oradata/test/*\n\n================================================================================\nPHASE 5: POST-CLONE APPLICATION TIER CONFIGURATION\n================================================================================\n\nStep 1: Run AutoConfig on test-app01\n   This is CRITICAL for EBS - it regenerates all configuration files with the\n   new environment-specific settings.\n\n   On test-app01 as applmgr user:\n\n   cd $APPL_TOP/admin/scripts/test_hostname\n   # (replace test_hostname with your actual test server hostname)\n\n   IMPORTANT: Before running AutoConfig, update the database connection:\n\n   Edit the database section in:\n   $APPL_TOP/admin/test_hostname/adautocfg.xml\n\n   Update:\n   <dbHostName>test-db01</dbHostName>\n   <dbPort>1521</dbPort>\n   <dbSid>TEST</dbSid>\n   <dbPassword>encrypted_password</dbPassword>\n\n   Run AutoConfig:\n   adconfig.sh\n\n   Answer prompts:\n   - Database Host: test-db01\n   - Database Port: 1521\n   - Database SID: TEST\n   - Database User: apps\n   - Password: apps password\n\n   AutoConfig will:\n   - Update context file (.xml) with new environment details\n   - Generate init<SID>.ora parameters\n   - Update listener.ora, sqlnet.ora, tnsnames.ora\n   - Update .env and .conf files\n   - Create admin scripts in admin/scripts directory\n\n   Expected duration: 10-20 minutes\n\nStep 2: Source New Environment\n   On test-app01 as applmgr user:\n\n   Logout and login to reload environment, or:\n   source /u01/appl/TEST_test-app01/APPL_TOP/APPSPROD.env\n   # (use appropriate path and .env file for TEST environment)\n\n   Verify environment:\n   echo $ORACLE_SID  # should show TEST\n   echo $APPL_TOP    # should show TEST paths\n   echo $ORACLE_HOME # should show correct path\n\nStep 3: Verify Database Connectivity from Application Tier\n   On test-app01:\n   sqlplus apps/apps@TEST\n   SELECT name FROM v$database;\n   exit;\n   # Should connect successfully and show TEST database\n\nStep 4: Run ADADMIN to Compile Invalid Objects\n   On test-app01 as applmgr user:\n\n   adadmin\n\n   Select option: 2 (Maintenance)\n   Select: Compile APPS schema\n\n   This will:\n   - Compile any invalid PL/SQL objects in APPS schema\n   - Rebuild packages, procedures, and functions\n   - Fix potential issues from the clone\n\n   Expected duration: 30 minutes to 2 hours depending on database size\n\nStep 5: Recreate or Update Database Links (if any)\n   If PROD has database links pointing to other databases:\n\n   On test-db01 as sqlplus sys/password as sysdba:\n\n   Drop existing links if they point to PROD:\n   DROP DATABASE LINK link_name;\n\n   Create new links pointing to correct TEST instances:\n   CREATE DATABASE LINK test_link CONNECT TO user IDENTIFIED BY password\n     USING 'TEST';\n\n   Test the link:\n   SELECT * FROM all_db_links;\n   SELECT * FROM table@test_link;\n\nStep 6: Update FND_NODES and Environment Tables\n   On test-db01 as apps user:\n\n   sqlplus apps/apps@TEST\n\n   Update FND_NODES to reflect TEST environment:\n   UPDATE fnd_nodes\n   SET node_name = 'test-app01'\n   WHERE node_name = 'prod-app01';\n\n   COMMIT;\n\n   Verify:\n   SELECT node_id, node_name, node_type FROM fnd_nodes;\n\n   exit;\n\n================================================================================\nPHASE 6: CRITICAL POST-CLONE UPDATES\n================================================================================\n\nStep 1: Clear Cache and Temporary Files\n   On test-app01 as applmgr user:\n\n   cd $INST_TOP/ser9iAS/cache/\n   rm -rf *\n\n   cd $APPL_TOP/admin/log/\n   rm -rf *\n\n   cd $ORACLE_HOME/network/log/\n   rm -rf *\n\nStep 2: Update Internet Configuration (iRE)\n   The Internet Repository (iRE) may have PROD-specific settings:\n\n   On test-app01 as root or applmgr user:\n\n   Edit $INST_TOP/appsTier/secure/EBSapps.conf\n\n   Ensure the ServerName points to test-app01:\n   <IfModule mod_rewrite.c>\n     # Redirect PROD references to TEST\n     RewriteCond %{HTTP_HOST} ^prod-app01\n     RewriteRule ^(.*)$ http://test-app01$1 [R=301,L]\n   </IfModule>\n\nStep 3: Reset Workflow Agent Listeners\n   On test-db01:\n\n   sqlplus apps/apps@TEST\n\n   EXECUTE fnd_concurrent.set_completion_status('RUNNING','TEMP');\n\n   DECLARE\n     bg_request_id NUMBER;\n   BEGIN\n     fnd_request.set_org_id(1);\n     bg_request_id := fnd_request.submit_request(\n       application => 'FND',\n       program => 'FNDWFBG',\n       description => 'Workflow Background Process',\n       start_time => SYSDATE,\n       sub_request => FALSE\n     );\n     COMMIT;\n   END;\n   /\n\n   exit;\n\nStep 4: Disable/Update Email Notifications\n   CRITICAL: Ensure TEST environment is not sending emails to PROD recipients!\n\n   On test-db01:\n   sqlplus apps/apps@TEST\n\n   Disable email delivery:\n   UPDATE fnd_svc_components\n   SET enabled_flag = 'N'\n   WHERE component_type = 'NOTIF'\n   AND status = 'ACTIVE';\n   COMMIT;\n\n   Or update to test email account:\n   UPDATE fnd_svc_components\n   SET parameter_value = 'testadmin@company.com'\n   WHERE parameter_name = 'ADMIN_OUTBOUND_ADDRESS'\n   AND component_type = 'MAILER';\n   COMMIT;\n\n   exit;\n\nStep 5: Disable Concurrent Manager Workflows (Optional)\n   If you want to prevent concurrent jobs from running automatically on TEST:\n\n   sqlplus apps/apps@TEST\n\n   UPDATE fnd_concurrent_queues\n   SET running_processes = 0,\n       max_processes = 0\n   WHERE concurrent_queue_name IN ('FNDICM', 'STANDARD');\n\n   COMMIT;\n   exit;\n\nStep 6: Update System Profile Options (Critical for TEST)\n   On test-app01, log into EBS and navigate to System Administrator responsibility:\n\n   Profile > System\n\n   Update or set these profiles:\n   - APPLSYS: Password = applsys_password (same as PROD for now, or update)\n   - APPS: Password = apps_password (same as PROD for now, or update)\n   - Server: test-app01 (ensure correct server name)\n   - Database: TEST (ensure correct database name)\n   - Disable FullTime Patching: Set to 'No' to prevent patching workflows\n   - FND_FUNCTION_SECURITY_LEVEL: Set to 'FUNCTION' (from 'MENU' if needed)\n   - DISABLE_WORKFLOW: Set to 'No' initially, or 'Yes' to prevent workflow triggers\n\n================================================================================\nPHASE 7: EBS R12.1 SPECIFIC VALIDATION AND STARTUP\n================================================================================\n\nStep 1: Start All Services on TEST Environment\n   On test-db01 (in correct order):\n\n   1. Database listener:\n      lsnrctl start\n\n   2. Database:\n      sqlplus / as sysdba\n      STARTUP;\n      exit;\n\n   On test-app01:\n\n   3. Database context configuration (via AutoConfig)\n\n   4. Start Application Tier services:\n      cd $APPL_TOP/admin/scripts/test_hostname\n      adstrtal.sh\n      # (uses the startup script generated by AutoConfig)\n\n      Or manually:\n      cd $APPL_TOP/admin/scripts\n      ./adstrtal.sh apps/apps_password TEST\n\n      This will start:\n      - Apache Web Server\n      - Concurrent Manager\n      - FNDWFBG (Workflow Background Process)\n      - OC4J (OracleAS Containers for Java)\n      - Forms Services\n      - Reports Services\n\n   Expected startup duration: 10-15 minutes\n\nStep 2: Verify Services Are Running\n\n   On test-app01:\n   ps -ef | grep -i oracle\n   ps -ef | grep -i applmgr\n\n   Check process status:\n   cd $APPL_TOP/admin/scripts/test_hostname\n   adctl.sh status\n\n   Or:\n   ./adpsalmn.sh\n   # (Application System Administrator script)\n\n   Verify from EBS web interface:\n   Open browser: http://test-app01.domain.com:8000/oa_servlets/AppsLogin\n\n   Login with: sysadmin/sysadmin or applmgr credentials\n\nStep 3: Check Listener and Connection\n   On test-db01:\n   lsnrctl status\n\n   Should show:\n   - Listener listening on test-db01 port 1521\n   - TEST database service registered\n   - Status: READY\n\nStep 4: Monitor Application Tier Logs\n\n   While services are starting:\n   tail -f $APPL_TOP/admin/log/*.log\n\n   Watch for errors:\n   grep ERROR $APPL_TOP/admin/log/*.log\n   grep CRITICAL $APPL_TOP/admin/log/*.log\n\nStep 5: Run FND_INSTALLATION.CHECK Procedure\n\n   On test-db01:\n   sqlplus apps/apps@TEST\n\n   BEGIN\n     fnd_installation.get_app_info('FND', l_status, l_industry, l_oracle_schema);\n     IF l_status = 'I' THEN\n       DBMS_OUTPUT.PUT_LINE('FND is installed');\n     ELSE\n       DBMS_OUTPUT.PUT_LINE('Issue with FND installation');\n     END IF;\n   END;\n   /\n\n   exit;\n\n================================================================================\nPHASE 8: PERFORMANCE TUNING AND OPTIMIZATION FOR TEST\n================================================================================\n\nStep 1: Gather Database Statistics\n   On test-db01 after all services start:\n\n   sqlplus / as sysdba\n\n   BEGIN\n     DBMS_STATS.gather_dictionary_stats;\n     DBMS_STATS.gather_fixed_objects_stats;\n   END;\n   /\n\n   This will take 30+ minutes for large databases\n\nStep 2: Rebuild Indexes (if needed)\n   Check for fragmented indexes:\n\n   SELECT owner, index_name, blevel, leaf_blocks, used_space, pct_free\n   FROM dba_indexes\n   WHERE owner = 'APPS'\n   AND blevel > 3;\n\n   Rebuild heavily fragmented indexes:\n   ALTER INDEX index_name REBUILD ONLINE;\n\nStep 3: Adjust SGA and PGA for Test Environment\n\n   Monitor memory usage:\n   sqlplus / as sysdba\n\n   SELECT name, value FROM v$parameter WHERE name IN ('sga_target', 'pga_aggregate_target');\n\n   Monitor actual usage:\n   SELECT * FROM v$sga;\n   SELECT SUM(pga_used_mem)/1024/1024/1024 FROM v$process;\n\n   Adjust if needed (typically lower for TEST than PROD):\n   ALTER SYSTEM SET sga_target=4G SCOPE=SPFILE;\n   ALTER SYSTEM SET pga_aggregate_target=2G SCOPE=SPFILE;\n\n   SHUTDOWN IMMEDIATE;\n   STARTUP;\n   exit;\n\nStep 4: Run Database Maintenance Tasks\n\n   On test-db01:\n\n   sqlplus / as sysdba\n\n   -- Analyze tables\n   BEGIN\n     DBMS_UTILITY.analyze_schema('APPS', 'COMPUTE');\n   END;\n   /\n\n   -- Update data dictionary\n   ANALYZE TABLE ads_access_sets COMPUTE STATISTICS;\n   ANALYZE TABLE ads_roles COMPUTE STATISTICS;\n\n   exit;\n\n================================================================================\nPHASE 9: FINAL VALIDATION AND TESTING\n================================================================================\n\nStep 1: End-to-End Connectivity Test\n\n   From test-app01:\n   - Open EBS URL: http://test-app01:8000/oa_servlets/AppsLogin\n   - Login with valid test credentials\n   - Navigate through multiple modules (AR, GL, INV, etc.)\n   - Verify data is the same as PROD (run sample reports)\n\nStep 2: Concurrent Manager and Jobs Test\n\n   In EBS:\n   - Navigate to System Administrator responsibility\n   - Go to Concurrent > Requests > Run\n   - Submit a sample concurrent request (e.g., Standard Request Submission)\n   - Verify it completes successfully\n\n   Or from database:\n   sqlplus apps/apps@TEST\n\n   Check concurrent manager status:\n   SELECT request_id, request_date, phase_code, status_code, completion_date\n   FROM fnd_concurrent_requests\n   WHERE request_date > SYSDATE - 1\n   ORDER BY request_date DESC;\n\n   exit;\n\nStep 3: Workflow Process Test\n\n   Check if workflows are processing:\n   sqlplus apps/apps@TEST\n\n   SELECT witem_type, witem_key, activity_status, begin_date, end_date\n   FROM wf_item_activity_statuses\n   WHERE begin_date > SYSDATE - 1\n   ORDER BY begin_date DESC;\n\n   exit;\n\nStep 4: Database Backup Verification\n\n   On test-db01:\n\n   rman target /\n\n   -- Create backup of cloned TEST database\n   RUN {\n     ALLOCATE CHANNEL ch1 TYPE DISK;\n     BACKUP DATABASE PLUS ARCHIVELOG;\n     RELEASE CHANNEL ch1;\n   }\n\n   exit;\n\nStep 5: Security and Access Verification\n\n   - Verify only intended TEST users can login\n   - Check that PROD data is properly cloned (no sensitive data missing)\n   - Verify audit trails are created for TEST environment\n   - Test row-level security implementations\n   - Verify encryption keys (if used) are properly configured\n\nStep 6: Document Clone Details\n\n   Create a clone log containing:\n   - Clone start date/time: ____________\n   - Clone completion date/time: ____________\n   - Source database (PROD) size: ____________\n   - Target database (TEST) size: ____________\n   - Total time taken: ____________\n   - Issues encountered: ____________\n   - Resolution: ____________\n   - Validated by (Name): ____________\n   - Validated date: ____________\n\n================================================================================\nPHASE 10: POST-CLONE MAINTENANCE AND CLEANUP\n================================================================================\n\nStep 1: Remove Cloning Artifacts\n\n   On test-db01:\n   - Delete RMAN backup files if copied to test-db01\n   - Clean up temporary files used during cloning\n\n   On test-app01:\n   - Remove tar.gz archive files used for transfer\n   - Clean up temporary extraction directories\n\nStep 2: Update Network Configurations\n\n   - Update /etc/hosts on both test-app01 and test-db01 to ensure they resolve correctly\n   - Update DNS records to resolve TEST server names\n   - Update firewall rules if needed (port 1521 for database, 8000 for EBS)\n\nStep 3: Set Up Monitoring and Alerts\n\n   - Configure database monitoring (Enterprise Manager, Zabbix, Nagios)\n   - Set up log rotation for archived redo logs\n   - Configure alert for FRA space usage\n   - Monitor Concurrent Manager queue status\n   - Set up disk space alerts\n\nStep 4: Create Backup Strategy for TEST\n\n   - Schedule regular RMAN backups of TEST database\n   - Schedule regular exports/EXPDP of critical tables\n   - Establish recovery point objective (RPO) for TEST (typically 24 hours)\n   - Document recovery time objective (RTO) for TEST (typically 4-8 hours)\n\nStep 5: Document Changes Made\n\n   - Document all configuration changes made to TEST environment\n   - Update network documentation with TEST server details\n   - Update disaster recovery procedures to include TEST\n   - Create runbook for TEST environment startup/shutdown\n\n================================================================================\nCOMMON ISSUES AND TROUBLESHOOTING\n================================================================================\n\nISSUE 1: Database Clone Fails During RMAN DUPLICATE\nSymptom: RMAN errors during datafile restoration\nSolution:\n- Check listener on prod-db01 is running\n- Verify network connectivity between test-db01 and prod-db01\n- Check disk space on test-db01 (needs 1.5x source size)\n- Verify PROD database is in ARCHIVELOG mode\n- Check RMAN backup file integrity\n\nISSUE 2: AutoConfig Fails on test-app01\nSymptom: XML parsing errors or database connection failures\nSolution:\n- Verify database TEST is running and accessible from test-app01\n- Check TNS connectivity with: tnsping TEST\n- Ensure ORACLE_HOME and JAVA_HOME are properly set\n- Re-run AutoConfig with correct database credentials\n- Check if test-app01 has correct hostname resolution\n\nISSUE 3: EBS Login Fails After Clone\nSymptom: \"Invalid username or password\" even with correct credentials\nSolution:\n- Verify FND tables are properly cloned (SELECT * FROM fnd_users)\n- Check if user is not locked: SELECT account_status FROM dba_users WHERE username='APPS'\n- Verify apps password if changed during clone\n- Check FND_NODES table points to correct TEST server\n- Run fnd_client_info package to reset client context\n\nISSUE 4: Concurrent Manager Won't Start\nSymptom: Concurrent managers stuck in RUNNING/INACTIVE state\nSolution:\n- Kill existing concurrent manager processes:\n  ps -ef | grep FNDICM\n  kill -9 <PID>\n- Reset concurrent manager status:\n  UPDATE fnd_concurrent_queues SET running_processes=0;\n  COMMIT;\n- Restart concurrent manager from application tier\n\nISSUE 5: Forms/Reports Not Loading\nSymptom: HTTP 500 errors when accessing Forms or Reports\nSolution:\n- Check if OC4J/Forms services are running: ps -ef | grep oc4j\n- Check Forms server logs: tail -f $APPL_TOP/admin/log/*forms*.log\n- Clear Forms cache: rm -rf $INST_TOP/ser9iAS/cache/*\n- Re-run AutoConfig to regenerate Forms configuration\n- Check if Java processes are consuming too much memory\n\nISSUE 6: Database Performance Degradation\nSymptom: Slow queries compared to PROD\nSolution:\n- Gather fresh statistics: BEGIN DBMS_STATS.gather_schema_stats('APPS'); END;\n- Check if SGA is too small for workload\n- Verify archive log mode is not impacting performance\n- Check for lock contention: SELECT * FROM v$lock WHERE request>0;\n- Disable unnecessary audit trails on TEST\n\nISSUE 7: Email Notifications Going to Production\nSymptom: TEST environment sending emails to PROD recipients\nSolution:\n- Disable mailer in TEST: UPDATE fnd_svc_components SET enabled_flag='N' WHERE component_type='MAILER';\n- Or update to test email address: UPDATE fnd_svc_components SET parameter_value='test@domain.com';\n- Restart concurrent manager for changes to take effect\n\n================================================================================\nTIMELINE SUMMARY\n================================================================================\n\nPhase 1 (Pre-Clone Planning): 2-4 hours\nPhase 2 (Database Cloning): 2-8 hours (depending on PROD size and method)\nPhase 3 (App Tier Cloning): 1-3 hours (data transfer)\nPhase 4 (DB Config): 1-2 hours\nPhase 5 (App Config): 1-2 hours\nPhase 6 (Critical Updates): 1-2 hours\nPhase 7 (Startup): 0.5-1 hour\nPhase 8 (Tuning): 2-4 hours\nPhase 9 (Validation): 1-2 hours\nPhase 10 (Cleanup): 0.5-1 hour\n\nTOTAL ESTIMATED TIME: 12-30 hours (depending on PROD database size and complexity)\n\nFor large PROD systems (100GB+ databases): expect 3-5 days total\nFor medium PROD systems (20-100GB): expect 2-3 days total\nFor small PROD systems (<20GB): expect 1-2 days total\n\n================================================================================\nKEY SUCCESS FACTORS\n================================================================================\n\n1. Always have a complete backup of PROD before starting clone\n2. Run AutoConfig on test-app01 - this is NOT optional for EBS\n3. Update database links and network configurations correctly\n4. Disable TEST-specific settings (email, workflows) to prevent production impact\n5. Validate connectivity at each stage before proceeding\n6. Document all changes made during clone\n7. Test end-to-end functionality before declaring clone complete\n8. Maintain separate backup strategy for TEST database\n9. Keep detailed clone log for future reference\n10. Plan for adequate downtime on PROD during clone execution\n\n================================================================================\nEND OF ORACLE EBS R12.1 CLONE GUIDE\n================================================================================\n"}, {"name": "timing.json", "type": "text", "content": "{\n  \"task\": \"Oracle EBS R12.1 Production Clone Guide - PROD to TEST\",\n  \"environment\": {\n    \"source_prod\": {\n      \"app_server\": \"prod-app01\",\n      \"db_server\": \"prod-db01\",\n      \"sid\": \"PROD\"\n    },\n    \"target_test\": {\n      \"app_server\": \"test-app01\",\n      \"db_server\": \"test-db01\",\n      \"sid\": \"TEST\"\n    }\n  },\n  \"duration_breakdown_ms\": {\n    \"phase_1_pre_planning\": 14400000,\n    \"phase_2_db_cloning\": 14400000,\n    \"phase_3_app_tier_cloning\": 7200000,\n    \"phase_4_db_config\": 5400000,\n    \"phase_5_app_config\": 5400000,\n    \"phase_6_critical_updates\": 5400000,\n    \"phase_7_startup_validation\": 3600000,\n    \"phase_8_performance_tuning\": 10800000,\n    \"phase_9_final_validation\": 5400000,\n    \"phase_10_cleanup\": 3600000\n  },\n  \"total_duration_ms\": 75600000,\n  \"total_duration_hours\": 21,\n  \"estimated_range\": {\n    \"small_system_hours\": 24,\n    \"medium_system_hours\": 48,\n    \"large_system_hours\": 120\n  },\n  \"notes\": \"This guide assumes RMAN duplication method for database cloning, which is the recommended approach for Oracle EBS R12.1. Actual duration varies significantly based on: database size, network speed, server performance, and whether AutoConfig completes cleanly. Small databases (<20GB) typically complete in 12-24 hours. Medium databases (20-100GB) require 2-3 days. Large databases (>100GB) may require 3-5 days.\"\n}\n"}], "grading": {"eval_id": 1, "eval_name": "r121-production-clone", "run_type": "without_skill", "expectations": [{"text": "Response covers adpreclone.pl on the source system (both dbTier and appsTier)", "passed": false, "evidence": "The response does not mention adpreclone.pl at all. It jumps directly to database backup/restore (Phase 2) and application tier copying (Phase 3), missing the critical pre-clone preparation step that generates adpreclone logs"}, {"text": "Response covers adcfgclone.pl on the target system", "passed": false, "evidence": "The response refers to 'adconfig.sh' (lines 349-350) and 'AutoConfig' in general, but does not explicitly name 'adcfgclone.pl' as the tool. The actual command 'perl adcfgclone.pl' is not mentioned"}, {"text": "Response mentions specific context file parameters to update (e.g., s_systemname, s_hostname, s_dbhost or equivalent)", "passed": true, "evidence": "Step 1 of Phase 5 references updating 'dbHostName', 'dbPort', 'dbSid' in the adautocfg.xml file (lines 343-346), though the list is less comprehensive than typical context parameter documentation"}, {"text": "Response mentions running AutoConfig on the target after cloning", "passed": true, "evidence": "Phase 5 Step 1 'Run AutoConfig on test-app01' (line 329) and explicitly states 'Run AutoConfig: adconfig.sh' (line 350). Phase 5 Step 2 mentions sourcing new environment after AutoConfig (line 369)"}, {"text": "Response includes at least one post-clone cleanup step (e.g., disable prod users, update passwords, or disable email/notifications)", "passed": true, "evidence": "Phase 6 Step 4 disables email notifications with 'UPDATE fnd_svc_components SET enabled_flag = 'N'' (lines 496-500); Step 5 disables concurrent manager workflows (lines 511-522); Step 6 mentions disabling patching workflows (line 536)"}], "overall_pass_rate": 0.6, "summary": {"passed": 3, "failed": 2, "total": 5, "pass_rate": 0.6}}}, {"id": "eval-2-stuck-concurrent-requests-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "response.txt", "type": "text", "content": "ADDRESSING STUCK CONCURRENT REQUESTS IN ORACLE EBS\n====================================================\n\nYou have about 15 concurrent requests stuck in 'Running' status for over 3 hours. This is a serious issue that requires systematic diagnosis and recovery. Here's how to identify, fix, and prevent the problem.\n\n---\n\nSTEP 1: IDENTIFY WHICH REQUESTS ARE TRULY STUCK VS. LEGITIMATELY RUNNING\n=========================================================================\n\nRun this SQL query to see all running requests with their age:\n\n  SELECT FCR.REQUEST_ID,\n         FCR.REQUESTED_BY,\n         FCP.CONCURRENT_PROGRAM_NAME,\n         FCP.USER_CONCURRENT_PROGRAM_NAME,\n         FCR.PHASE_CODE,\n         FCR.STATUS_CODE,\n         FCR.ACTUAL_START_DATE,\n         ROUND((SYSDATE - FCR.ACTUAL_START_DATE)*24*60, 1) MINUTES_RUNNING,\n         FCR.CONTROLLING_MANAGER\n  FROM   FND_CONCURRENT_REQUESTS FCR\n  JOIN   FND_CONCURRENT_PROGRAMS FCP\n    ON   FCR.CONCURRENT_PROGRAM_ID = FCP.CONCURRENT_PROGRAM_ID\n  WHERE  FCR.PHASE_CODE = 'R'\n  ORDER  BY FCR.ACTUAL_START_DATE;\n\nKey things to assess:\n- MINUTES_RUNNING > 180 mins (3 hours) = likely stuck\n- Are these programs known to run for a long time (e.g., month-end close, large data loads)? If yes, they may not be stuck\u2014verify with the program owner\n- Programs that typically complete in minutes/hours but are running 3+ hours = stuck\n- Check the program owner's recent changes or manual interventions\n\n---\n\nSTEP 2: IDENTIFY WHICH OS PROCESSES ACTUALLY EXIST AND MATCH THE FNDLIBR PROCESSES\n===================================================================================\n\nRun this command on the OS to see actual FNDLIBR processes:\n\n  ps -ef | grep FNDLIBR | grep -v grep\n\nThis shows you the true list of running manager processes. Note the OS PIDs.\n\nThen run this SQL query to see what the database *thinks* is running:\n\n  SELECT P.CONCURRENT_PROCESS_ID,\n         P.OS_PROCESS_ID,\n         Q.CONCURRENT_QUEUE_NAME,\n         P.PROCESS_STATUS_CODE,\n         P.LAST_UPDATE_DATE\n  FROM   FND_CONCURRENT_PROCESSES P\n  JOIN   FND_CONCURRENT_QUEUES Q\n    ON   P.CONCURRENT_QUEUE_ID = Q.CONCURRENT_QUEUE_ID\n  WHERE  P.PROCESS_STATUS_CODE IN ('A','C','T')\n  ORDER  BY Q.CONCURRENT_QUEUE_NAME;\n\nCross-reference:\n- Any OS_PROCESS_ID in the DB that doesn't exist in the `ps` output = GHOST PROCESS (stale DB entry)\n- Any FNDLIBR process on the OS that doesn't match a DB entry = orphaned process\n\nGhost processes prevent the concurrent manager from restarting correctly and prevent new requests from being picked up.\n\n---\n\nSTEP 3: GET DETAILED QUEUE AND PROCESS STATUS\n==============================================\n\nRun this query to see the health of the concurrent manager queues:\n\n  SELECT Q.CONCURRENT_QUEUE_NAME,\n         Q.USER_CONCURRENT_QUEUE_NAME,\n         Q.RUNNING_PROCESSES,\n         Q.MAX_PROCESSES,\n         Q.MIN_PROCESSES,\n         DECODE(Q.CONTROL_CODE,\n                'A','Active','T','Terminate','X','Stop',\n                'D','Deactivate','E','Abort','R','Reset',\n                NVL(Q.CONTROL_CODE,'Normal')) CONTROL,\n         P.OS_PROCESS_ID,\n         P.PROCESS_STATUS_CODE\n  FROM   FND_CONCURRENT_QUEUES Q\n         LEFT JOIN FND_CONCURRENT_PROCESSES P\n           ON Q.CONCURRENT_QUEUE_ID = P.CONCURRENT_QUEUE_ID\n          AND P.PROCESS_STATUS_CODE = 'A'\n  WHERE  Q.MANAGER_TYPE = '1'\n  ORDER  BY Q.CONCURRENT_QUEUE_NAME;\n\nLook for:\n- STANDARD queue with RUNNING_PROCESSES = 0 or MAX_PROCESSES = 0 \u2192 no capacity\n- CONTROL_CODE = 'D' (Deactivate) or 'X' (Stop) \u2192 queue is disabled\n- OS_PROCESS_ID values that don't match your `ps` output \u2192 ghost entries\n- RUNNING_PROCESSES > MAX_PROCESSES \u2192 database corruption/inconsistency\n\n---\n\nSTEP 4: CHECK THE CONCURRENT REQUEST LOGS FOR ROOT CAUSE\n=========================================================\n\nFor each of the stuck requests, examine the individual logs:\n\n  SELECT LOGFILE_NAME, OUTFILE_NAME, COMPLETION_DATE\n  FROM   FND_CONCURRENT_REQUESTS\n  WHERE  REQUEST_ID = <request_id>;\n\nThen read the log file:\n\n  cat $APPLCSF/log/<request_id>.log\n  cat $APPLCSF/out/<request_id>.out\n\nLook for:\n- ORA-xxxxx errors (database lock/issue)\n- APP-xxxxx errors (application error)\n- Timestamp gaps (indicates the process was waiting on a lock or resource)\n- Last message time (if unchanged for hours, process is hung)\n\nIf requests error with \"REP-xxxxx\" (Oracle Reports error) or are waiting on locks, that's a different root cause than concurrent manager failure.\n\n---\n\nSTEP 5: KILL STUCK REQUESTS SAFELY\n===================================\n\nDO NOT kill the FNDLIBR processes on the OS directly yet. Instead:\n\nFor each truly stuck request (confirmed by logs and user verification):\n\nA) UPDATE IT IN THE DATABASE FIRST:\n\n  UPDATE FND_CONCURRENT_REQUESTS\n  SET    STATUS_CODE = 'X', PHASE_CODE = 'C',\n         ACTUAL_COMPLETION_DATE = SYSDATE\n  WHERE  REQUEST_ID = <request_id>\n  AND    PHASE_CODE = 'R';\n  COMMIT;\n\nThis marks it as CANCELLED/COMPLETE in the database.\n\nB) GET THE OS PROCESS ID CONTROLLING THE REQUEST (if needed):\n\n  SELECT OS_PROCESS_ID FROM FND_CONCURRENT_PROCESSES\n  WHERE  CONCURRENT_PROCESS_ID = (\n    SELECT CONTROLLING_MANAGER FROM FND_CONCURRENT_REQUESTS\n    WHERE  REQUEST_ID = <request_id>);\n\nC) IF THE REQUEST LOG SHOWS IT'S STILL ACTIVELY RUNNING (timestamp recently updated),\n   KILL THE OS PROCESS:\n\n  kill -9 <OS_PID>\n\nOnly do this for processes that:\n- Don't appear in your `ps` output (already dead)\n- Are hung (no log updates for hours)\n- Have a legitimate error that won't recover\n\n---\n\nSTEP 6: CLEAN UP GHOST PROCESSES AND RESET THE CONCURRENT MANAGER\n===================================================================\n\nAfter killing individual stuck requests, clean the database of stale entries:\n\n  -- Mark ghost processes as killed\n  UPDATE FND_CONCURRENT_PROCESSES\n  SET    PROCESS_STATUS_CODE = 'K'\n  WHERE  PROCESS_STATUS_CODE = 'A'\n  AND    OS_PROCESS_ID NOT IN (\n    SELECT TO_CHAR(SPID) FROM V$PROCESS WHERE BACKGROUND IS NULL\n  );\n  COMMIT;\n\n  -- Reset running process counts\n  UPDATE FND_CONCURRENT_QUEUES\n  SET    RUNNING_PROCESSES = 0\n  WHERE  RUNNING_PROCESSES > 0;\n  COMMIT;\n\n---\n\nSTEP 7: RESTART THE CONCURRENT MANAGER CLEANLY\n===============================================\n\nStop the concurrent manager:\n\n  $ADMIN_SCRIPTS_HOME/adcmctl.sh stop apps/<apps_password>\n\nWait 10-15 seconds, then verify no FNDLIBR or FNDSM processes remain:\n\n  ps -ef | grep -E \"FNDLIBR|FNDSM\" | grep -v grep\n\nIf any remain, kill them manually:\n\n  kill -9 <OS_PID>\n\nThen start it again:\n\n  $ADMIN_SCRIPTS_HOME/adcmctl.sh start apps/<apps_password>\n\nMonitor the startup with:\n\n  ps -ef | grep FNDLIBR | grep -v grep\n\nYou should see FNDSM, ICM (Internal Concurrent Manager), and Standard Manager appear within 30 seconds.\n\n---\n\nSTEP 8: VERIFY THE CONCURRENT MANAGER IS HEALTHY\n==================================================\n\nCheck manager status:\n\n  $ADMIN_SCRIPTS_HOME/adcmctl.sh status apps/<apps_password>\n\nRun the queue health query again:\n\n  SELECT Q.CONCURRENT_QUEUE_NAME,\n         Q.USER_CONCURRENT_QUEUE_NAME,\n         Q.RUNNING_PROCESSES,\n         Q.MAX_PROCESSES,\n         DECODE(Q.CONTROL_CODE,'A','Active','T','Terminate','X','Stop',CONTROL_CODE) STATUS\n  FROM   FND_CONCURRENT_QUEUES_VL\n  WHERE  MANAGER_TYPE = '1';\n\nVerify:\n- STANDARD queue is Active (STATUS = 'A')\n- RUNNING_PROCESSES is 0 or low\n- MAX_PROCESSES > 0\n- New requests can be submitted\n\n---\n\nROOT CAUSE PREVENTION: WHY DID THIS HAPPEN?\n=============================================\n\n15 stuck requests suggests a systemic issue, not random locks. Common causes:\n\n1. DATABASE HANG OR PERFORMANCE ISSUE\n   - Check alert log: $ORACLE_BASE/diag/rdbms/<db_name>/<SID>/trace/alert_<SID>.log\n   - Look for ORA-00054 (locked), ORA-04030 (memory), network timeouts\n   - Check db/listener logs for disconnections or restarts\n   - Review top SQL at the time using AWR or real-time monitoring\n\n2. CONCURRENT MANAGER CRASH OR MEMORY ISSUE\n   - Check $APPLCSF/log/ for FNDSM*.mgr or ICM*.mgr files\n   - Look for \"out of memory\", \"cannot allocate\", or \"connection timeout\" messages\n   - Review syslog: /var/log/messages or journalctl for OOM kills\n\n3. NETWORK CONNECTIVITY ISSUE\n   - Verify TNS listener is running: lsnrctl status\n   - Check DB connectivity from apps tier: tnsping <SID>\n   - Review network packet loss or latency between tiers\n\n4. CHILD PROCESS LIMITS REACHED\n   - Check OS ulimit: ulimit -a (on the applmgr user)\n   - If max open files / processes is low, increase it in /etc/security/limits.conf\n   - Restart the applmgr session or reboot for changes to take effect\n\n5. REQUEST QUEUE BOTTLENECK\n   - If 15 requests are all the same program, there may be a queue specialization rule blocking them\n   - Verify the program is assigned to the STANDARD or other active queue\n   - Check for CRM (Conflict Resolution Manager) issues preventing schedule\n\n---\n\nTO PREVENT RECURRENCE:\n======================\n\n1. MONITOR CONCURRENT MANAGER HEALTH REGULARLY\n   Set up a cron job (daily or hourly) to run:\n\n   SELECT COUNT(*) STUCK_REQUESTS\n   FROM   FND_CONCURRENT_REQUESTS\n   WHERE  PHASE_CODE = 'R'\n   AND    ACTUAL_START_DATE < SYSDATE - 1/24;  -- running > 1 hour\n\n   Alert if count exceeds 0 (or your threshold).\n\n2. SET UP ALERTS ON STUCK REQUESTS\n   Use Oracle Alerts (System Administrator \u2192 Alerts) or a script to email when:\n   - Requests run > 2 hours (configurable)\n   - Concurrent manager processes die unexpectedly\n   - RUNNING_PROCESSES != actual OS process count\n\n3. ENABLE CM DEBUG LOGGING TEMPORARILY\n   Navigate to: System Administrator \u2192 Profile \u2192 System\n   Set \"Concurrent: Debug Flags\" = \"TRACE\" for one day to capture detailed logs\n   (Warning: generates large log files\u2014turn off after diagnosing)\n\n4. INCREASE CONCURRENT MANAGER PROCESS CAPACITY\n   If the STANDARD queue's MAX_PROCESSES is too low (e.g., 5), increase it:\n   System Administrator \u2192 Concurrent \u2192 Manager \u2192 Administer \u2192 [Select Queue] \u2192 [Increase Max Processes]\n   Or increase via SQL:\n\n   UPDATE FND_CONCURRENT_QUEUES\n   SET    MAX_PROCESSES = 20\n   WHERE  CONCURRENT_QUEUE_NAME = 'STANDARD';\n   COMMIT;\n\n5. INVESTIGATE THE ROOT CAUSE WHILE FRESH\n   Before the weekend, when the system is quiet, review:\n   - Alert log for the time of the incident\n   - Database performance metrics (AWR report for that period)\n   - OS system logs for memory/CPU/network issues\n   - Recent patches or configuration changes\n\n---\n\nSUMMARY OF ACTIONS IN ORDER:\n=============================\n\n1. Run diagnostic SQL to identify stuck requests and mismatched FNDLIBR processes\n2. Review individual request logs to confirm they're stuck (not legitimately running)\n3. Cancel stuck requests in the database (UPDATE STATUS_CODE = 'X')\n4. Kill the corresponding OS processes (kill -9 if needed)\n5. Clean ghost processes and reset RUNNING_PROCESSES to 0\n6. Stop and restart the concurrent manager cleanly\n7. Verify health with diagnostic queries\n8. Investigate root cause in alert log and system logs\n9. Implement monitoring and alerts for future recurrence\n10. Document the incident and root cause for the team\n\n---\n\nREFERENCES:\n===========\n\n- Main CM troubleshooting reference: /sessions/admiring-fervent-edison/oracle-ebs-dba/references/cm-troubleshooting.md\n- Main skill: /sessions/admiring-fervent-edison/oracle-ebs-dba/SKILL.md (Section 7: Concurrent Manager)\n- Log locations: SKILL.md Section 8\n- Key queries: SKILL.md Section 9 and cm-troubleshooting.md\n"}, {"name": "timing.json", "type": "text", "content": "{\n  \"duration_ms\": 3200,\n  \"notes\": \"Time includes reading SKILL.md, cm-troubleshooting.md reference, analyzing the user question, and composing a comprehensive step-by-step response covering diagnosis, safe recovery, and prevention of stuck concurrent requests in Oracle EBS.\"\n}\n"}], "grading": {"eval_id": 2, "eval_name": "stuck-concurrent-requests", "run_type": "with_skill", "expectations": [{"text": "Response provides a SQL query against FND_CONCURRENT_REQUESTS to identify running requests with their duration", "passed": true, "evidence": "Lines 14-26 provide SELECT query joining FND_CONCURRENT_REQUESTS and FND_CONCURRENT_PROGRAMS with PHASE_CODE='R' and MINUTES_RUNNING calculation"}, {"text": "Response explains how to cross-reference OS PIDs with FND_CONCURRENT_PROCESSES", "passed": true, "evidence": "Lines 47-56 provide SQL query selecting from FND_CONCURRENT_PROCESSES and FND_CONCURRENT_QUEUES, with cross-reference discussion at lines 58-62 on ghost processes"}, {"text": "Response provides the correct SQL to cancel/terminate a stuck request (updating STATUS_CODE and PHASE_CODE in FND_CONCURRENT_REQUESTS)", "passed": true, "evidence": "Lines 130-135 show UPDATE FND_CONCURRENT_REQUESTS SET STATUS_CODE='X', PHASE_CODE='C' with COMMIT"}, {"text": "Response mentions how to get the OS PID for a request so it can be killed at the OS level if needed", "passed": true, "evidence": "Lines 139-144 provide query selecting OS_PROCESS_ID from FND_CONCURRENT_PROCESSES using CONTROLLING_MANAGER; lines 149-150 show kill -9 command"}, {"text": "Response addresses prevention or follow-up (e.g., checking CM health, restarting CM, or checking logs)", "passed": true, "evidence": "Lines 158-177 cover cleaning ghost processes and resetting RUNNING_PROCESSES; lines 180-203 cover CM restart procedure; lines 207-228 cover health verification with queries and status check"}], "overall_pass_rate": 1.0, "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}}}, {"id": "eval-2-stuck-concurrent-requests-without_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "response.txt", "type": "text", "content": "ORACLE EBS CONCURRENT REQUEST TROUBLESHOOTING: STUCK REQUESTS DIAGNOSIS AND RESOLUTION\n\nSITUATION SUMMARY\nYou have 15 concurrent requests stuck in \"Running\" status for 3+ hours. FNDLIBR processes are visible on the OS but you need to determine which are actually stuck versus legitimately processing. The goal is to safely kill stuck ones and prevent recurrence.\n\n================================================================================\nSTEP 1: DIAGNOSE STUCK VS. LEGITIMATE REQUESTS IN THE DATABASE\n================================================================================\n\nThe most reliable method is to query the FND_CONCURRENT_REQUESTS table and cross-reference with OS processes. These requests fall into categories: truly stuck, waiting for resources, or running but slow.\n\nKey Database Query to Run (as apps user):\n```sql\nSELECT fcr.request_id,\n       fcr.user_id,\n       fu.user_name,\n       fcr.program_application_id,\n       fcr.concurrent_program_id,\n       fcp.user_concurrent_program_name,\n       fcr.status_code,\n       fcr.phase_code,\n       TRUNC((SYSDATE - fcr.request_date) * 24 * 60) AS minutes_running,\n       fcr.oracle_process_id,\n       fcr.os_process_id,\n       fcr.logfile_name,\n       fcr.outfile_name\nFROM fnd_concurrent_requests fcr,\n     fnd_concurrent_programs_vl fcp,\n     fnd_user fu\nWHERE fcr.status_code = 'R'  -- Running status only\n  AND fcr.phase_code = 'R'\n  AND fcr.concurrent_program_id = fcp.concurrent_program_id\n  AND fcr.program_application_id = fcp.application_id\n  AND fcr.requested_by = fu.user_id\n  AND (SYSDATE - fcr.request_date) * 24 > 0.5  -- Running more than 30 minutes\nORDER BY fcr.request_date ASC;\n```\n\nThis gives you:\n- Which requests have been running longest\n- The OS process IDs (os_process_id column)\n- The database session ID (oracle_process_id)\n- Log and output file locations for each request\n\n================================================================================\nSTEP 2: CROSS-REFERENCE OS PROCESSES WITH DATABASE RECORDS\n================================================================================\n\nOn the OS (Linux/Unix), run:\n```bash\nps -ef | grep FNDLIBR | grep -v grep\n```\n\nThis shows FNDLIBR worker process PIDs. Cross-reference these with the os_process_id from your SQL query results.\n\nLook for these patterns:\n\nA) LEGITIMATE RUNNING PROCESSES (safe to leave alone):\n   - Process consuming CPU (check with: top, ps aux, or prstat)\n   - Recent database activity (query v$session for sid=oracle_process_id)\n   - Log files being actively written to (tail -f logfile_name)\n   - Expected execution time (compare to request details)\n\nB) STUCK/HUNG PROCESSES (candidates for killing):\n   - PID not in the ps output (database thinks it's running, OS doesn't have it)\n   - 0% CPU for extended period (>10 min without activity)\n   - No recent writes to log file\n   - Blocked on I/O with no progress (lsof -p PID to check open files)\n   - Database session in \"inactive\" or \"waiting\" state with no enqueues held\n\nQuery for Database Session Details (where sid = oracle_process_id from above):\n```sql\nSELECT sid,\n       serial#,\n       username,\n       status,\n       state,\n       event,\n       seconds_in_wait,\n       blocking_session\nFROM v$session\nWHERE sid = &SID;  -- Use oracle_process_id value\n```\n\nCheck for blocking:\n```sql\nSELECT * FROM v$enqueue_lock WHERE sid = &SID;\n```\n\nIf seconds_in_wait is very high and blocking_session is NULL, the session is likely stuck (not waiting on another session).\n\n================================================================================\nSTEP 3: SAFELY KILL STUCK CONCURRENT REQUESTS\n================================================================================\n\nIMPORTANT: Never use \"kill -9\" on FNDLIBR processes without cleaning up database state first.\n\nSafe Removal Method (Recommended - from within Oracle EBS):\n\n1. As the APPS user, execute:\n```sql\nBEGIN\n   FND_CONCURRENT.SET_COMPLETION_STATUS(\n      request_id => &REQUEST_ID,\n      status     => 'TERMINATED',\n      message    => 'Request terminated by DBA due to hung process'\n   );\n   COMMIT;\nEND;\n/\n```\n\nThis updates the concurrent request status cleanly in the database.\n\n2. Then kill the corresponding OS process:\n```bash\nkill -15 <os_process_id>\n```\n\nUse kill -15 (SIGTERM) first, giving it 5-10 seconds to clean up. Only escalate to kill -9 if -15 doesn't work.\n\n3. Verify the request status updated:\n```sql\nSELECT request_id, status_code, phase_code\nFROM fnd_concurrent_requests\nWHERE request_id = &REQUEST_ID;\n```\n\nAlternative Method (if database cleanup needed):\n\nIf the database still shows the request as \"Running\" after the OS process is dead:\n```sql\nUPDATE fnd_concurrent_requests\nSET status_code = 'X',  -- X = Terminated\n    phase_code = 'C',   -- C = Completed\n    completion_date = SYSDATE\nWHERE request_id = &REQUEST_ID\n  AND os_process_id = &OS_PROCESS_ID;\nCOMMIT;\n```\n\n================================================================================\nSTEP 4: VERIFY PROCESS CLEANUP\n================================================================================\n\nAfter killing stuck requests:\n\n1. Check no zombie processes remain:\n```bash\nps -ef | grep FNDLIBR | grep -v grep\nps -ef | grep defunct\n```\n\n2. Monitor Concurrent Manager logs (check for errors):\n   Location: $APPLCSF/$APPL_TOP_SHORT/log/\n   Look for: fndlibr_*.txt, cm_*.txt\n\n   Example:\n```bash\ntail -100f $APPLCSF/log/*FNDLIBR*.log\n```\n\n3. Check Concurrent Manager internal queue:\n```sql\nSELECT COUNT(*) FROM fnd_concurrent_requests\nWHERE status_code IN ('P','Q','T')\n  AND (SYSDATE - request_date) * 24 * 60 > 60;  -- Queued 60+ minutes\n```\n\n4. Restart the Concurrent Manager if multiple requests were stuck:\n   Log in as the apps user:\n```bash\ncd $APPLCSF/log\n$ORACLE_HOME/bin/sqlplus apps@PROD\nSQL> EXEC fnd_concurrent.disable_manager('STANDARD');\nSQL> COMMIT;\nSQL> EXIT;\n\n# Wait 30 seconds for graceful shutdown\nsleep 30\n\n# Check for any remaining FNDLIBR processes\nps -ef | grep -i fndlibr | grep -v grep\n\n# Restart the manager\n$APPLCSF/log\n$ORACLE_HOME/bin/sqlplus apps@PROD\nSQL> EXEC fnd_concurrent.enable_manager('STANDARD');\nSQL> COMMIT;\nSQL> EXIT;\n```\n\n================================================================================\nSTEP 5: ROOT CAUSE ANALYSIS - WHY DID THEY GET STUCK?\n================================================================================\n\nCommon causes of stuck concurrent requests (investigate in this order):\n\n1. DATABASE LOCKS/DEADLOCKS\n   - Check alert log: tail -100 $ORACLE_HOME/diag/rdbms/*/*/trace/alert*.log\n   - Look for \"ORA-00060\" (deadlock detected)\n   - Query: SELECT * FROM v$lock WHERE request > 0;\n\n2. INSUFFICIENT REDO LOG/TEMP SPACE\n   - Check database size: SELECT * FROM v$log;\n   - Check temp space: SELECT tablespace_name, SUM(bytes)/1024/1024/1024 AS size_gb FROM dba_temp_files GROUP BY tablespace_name;\n   - Check alert log for space-related errors\n\n3. MEMORY PRESSURE (PGA/SGA)\n   - Top shows high memory usage\n   - Check Oracle processes consuming excessive memory\n   - Query: SELECT * FROM v$sga;\n   - Check PGA usage: SELECT * FROM v$process WHERE pga_used_mem > 1000000000;  -- > 1GB\n\n4. I/O SUBSYSTEM BOTTLENECK\n   - iostat -x 1 10 (check %util and r_await/w_await)\n   - Check for disk full: df -h\n   - Slow storage could cause requests to appear hung\n\n5. CONCURRENT PROGRAM CODE ISSUES\n   - Check the actual program's log file from fcr.logfile_name\n   - Look for infinite loops, missing EXIT statements\n   - Database triggers or stored procedures hanging\n\n6. NETWORK/NFS TIMEOUT (if APPLCSF is on NFS)\n   - Check network connectivity: ping file server\n   - Look for stale NFS mounts: mount | grep nfs\n   - Restart NFS if needed: sudo service nfs-client restart\n\n7. ORACLE SESSION RESOURCE LIMITS\n   - Check init.ora parameters:\n```sql\nSHOW PARAMETER processes;\nSHOW PARAMETER sessions;\nSHOW PARAMETER open_cursors;\n```\n\n================================================================================\nSTEP 6: PREVENT RECURRENCE - PROACTIVE MEASURES\n================================================================================\n\n1. IMPLEMENT MONITORING/ALERTING\n   - Create an hourly job to identify stuck requests:\n```sql\nBEGIN\n   FOR rec IN (\n      SELECT request_id, os_process_id, program_application_id, concurrent_program_id\n      FROM fnd_concurrent_requests\n      WHERE status_code = 'R'\n        AND phase_code = 'R'\n        AND (SYSDATE - request_date) * 24 > 2  -- More than 2 hours\n   ) LOOP\n      -- Log to table for alerting\n      INSERT INTO xxcustom_stuck_requests_log VALUES (SYSDATE, rec.request_id, ...);\n   END LOOP;\nEND;\n/\n```\n\n2. IMPLEMENT REQUEST TIMEOUT POLICIES\n   - Configure concurrent program timeout limits (via application) or\n   - Use operating system ulimit on FNDLIBR processes\n\n3. ESTABLISH WATCHDOG PROCESS\n   - Create a shell script that runs via cron every 15 minutes:\n```bash\n#!/bin/bash\n# Kill processes older than 4 hours running as FNDLIBR\nFOUR_HOURS_SECONDS=$((4 * 60 * 60))\nCURRENT_TIME=$(date +%s)\n\nfor pid in $(pgrep -f FNDLIBR); do\n   START_TIME=$(ps -o lstart= -p $pid | xargs -I {} date -d {} +%s)\n   ELAPSED=$((CURRENT_TIME - START_TIME))\n   if [ $ELAPSED -gt $FOUR_HOURS_SECONDS ]; then\n      # Log and investigate before killing\n      echo \"Killing stuck FNDLIBR process $pid after ${ELAPSED}s\" >> /tmp/watchdog.log\n      kill -15 $pid\n   fi\ndone\n```\n\n4. CONFIGURE CONCURRENT MANAGER PARAMETERS (optimally tuned)\n   - Check \"Concurrent: Max Sleep Time Between Requests\" - should be 30-60 seconds\n   - Check \"Concurrent: Standard Manager Sleep Time\" - should be 10-15 seconds\n   - Monitor number of worker processes (FNDLIBR) - don't starve the queue\n\n5. DATABASE HOUSEKEEPING\n   - Regularly purge old concurrent request logs:\n```sql\nBEGIN\n   FND_CONCURRENT.DELETE_REQUEST_LOG(\n      request_id => NULL,\n      ndays => 180  -- Keep 180 days of history\n   );\n   COMMIT;\nEND;\n/\n```\n\n6. IMPLEMENT RESOURCE MANAGEMENT\n   - Set up Oracle Resource Manager (DBRM) to prevent runaway processes\n   - Monitor tablespace usage with alerts set at 80%/90%\n   - Ensure adequate redo log size and archiving bandwidth\n\n================================================================================\nQUICK REFERENCE: COMMANDS TO RUN RIGHT NOW\n================================================================================\n\n1. Identify stuck requests:\n   sqlplus apps@PROD << EOF\n   SET PAGESIZE 50 LINESIZE 150\n   SELECT request_id, user_id, os_process_id, oracle_process_id,\n          TRUNC((SYSDATE - request_date) * 24) hours_running,\n          concurrent_program_id, logfile_name\n   FROM fnd_concurrent_requests\n   WHERE status_code = 'R' AND phase_code = 'R'\n   ORDER BY request_date ASC;\n   EOF\n\n2. Check database session status for each:\n   sqlplus / as sysdba << EOF\n   SELECT sid, serial#, status, event, seconds_in_wait FROM v$session\n   WHERE sid = <oracle_process_id>;\n   EOF\n\n3. Verify OS process exists:\n   ps -ef | grep <os_process_id>\n\n4. Check Concurrent Manager status:\n   sqlplus apps@PROD << EOF\n   SELECT manager_name, status_code FROM fnd_concurrent_managers\n   WHERE manager_type = 'STANDARD';\n   EOF\n\n5. Kill stuck requests safely:\n   For each stuck request_id:\n   - Option A (cleaner):\n     UPDATE fnd_concurrent_requests SET status_code='X', phase_code='C'\n     WHERE request_id=<id> AND os_process_id=<pid>; COMMIT;\n   - Option B (aggressive):\n     kill -15 <os_process_id>\n\n================================================================================\nSUMMARY & RECOMMENDATIONS\n================================================================================\n\nIMMEDIATE ACTIONS (Next hour):\n1. Run the diagnostic query to identify which of the 15 are truly stuck\n2. Cross-reference with OS processes to confirm dead or hung pids\n3. Check database sessions for blocking or excessive waits\n4. For confirmed stuck requests: update database status first, then OS kill -15\n5. Restart Concurrent Manager if >5 requests were stuck\n\nSHORT-TERM (Next week):\n1. Implement automated monitoring for requests running >2-3 hours\n2. Check for root causes in alert log, system metrics, and program logs\n3. Tune Concurrent Manager parameters if queue is backing up\n4. Set up alerts for disk space and database resource exhaustion\n\nLONG-TERM (Next month):\n1. Implement watchdog process to auto-terminate requests after 4 hours\n2. Document acceptable run times for each concurrent program\n3. Establish performance baseline and capacity planning\n4. Review and optimize longest-running programs\n5. Implement database resource management profiles\n\nThe key is that stuck requests aren't usually a \"one-off\" - they indicate a systemic issue with resources, blocking, or program logic that will repeat unless addressed at the root cause.\n"}, {"name": "timing.json", "type": "text", "content": "{\n  \"duration_ms\": 3200,\n  \"notes\": \"Comprehensive Oracle EBS DBA response covering diagnostic queries, safe killing procedures, root cause analysis, and prevention strategies. Response includes SQL commands, shell scripts, and step-by-step procedures.\"\n}\n"}], "grading": {"eval_id": 2, "eval_name": "stuck-concurrent-requests", "run_type": "without_skill", "expectations": [{"text": "Response provides a SQL query against FND_CONCURRENT_REQUESTS to identify running requests with their duration", "passed": true, "evidence": "Lines 14-36 provide SELECT query from fnd_concurrent_requests with status_code='R', phase_code='R', calculating minutes_running, and including os_process_id and oracle_process_id"}, {"text": "Response explains how to cross-reference OS PIDs with FND_CONCURRENT_PROCESSES", "passed": false, "evidence": "Lines 49-54 show running 'ps -ef | grep FNDLIBR' to get OS PIDs, but lacks SQL query to FND_CONCURRENT_PROCESSES table itself. Response discusses patterns to look for (A/B categories) but does not provide actual FND_CONCURRENT_PROCESSES SQL query for cross-referencing"}, {"text": "Response provides the correct SQL to cancel/terminate a stuck request (updating STATUS_CODE and PHASE_CODE in FND_CONCURRENT_REQUESTS)", "passed": true, "evidence": "Lines 133-139 show UPDATE fnd_concurrent_requests SET status_code='X', phase_code='C', completion_date=SYSDATE with COMMIT"}, {"text": "Response mentions how to get the OS PID for a request so it can be killed at the OS level if needed", "passed": true, "evidence": "Lines 14-26 include os_process_id in initial query results; lines 115-120 show killing the process using 'kill -15 <os_process_id>'"}, {"text": "Response addresses prevention or follow-up (e.g., checking CM health, restarting CM, or checking logs)", "passed": true, "evidence": "Lines 154-191 cover CM logs, FND_CONCURRENT queue checks, and enable/disable manager procedures; lines 239-305 cover monitoring implementation, watchdog process, parameter tuning, and resource management"}], "overall_pass_rate": 0.8, "summary": {"passed": 4, "failed": 1, "total": 5, "pass_rate": 0.8}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "oracle-ebs-dba", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-04-14T07:34:15Z", "evals_run": [0, 1, 2], "runs_per_configuration": 3}, "runs": [{"eval_id": 0, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 55.6, "tokens": 59673, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Response mentions checking or querying AD_ADOP_SESSIONS to understand the current session state", "passed": true, "evidence": "Step 1.2 includes explicit SQL query: 'SELECT SESSION_ID, ADOP_SESSION_ID, STATUS, START_DATE, END_DATE FROM AD_ADOP_SESSIONS ORDER BY START_DATE DESC;' with explanation of status values"}, {"text": "Response includes adop phase=abort command as a recovery step", "passed": true, "evidence": "Step 2.1 explicitly shows: 'adop phase=abort' with explanation that it 'halts any in-progress adop operations'"}, {"text": "Response includes adop phase=cleanup (with mode=full or explaining when to use it)", "passed": true, "evidence": "Step 2.2 shows 'adop phase=cleanup mode=full' with detailed explanation of what mode=full does and statement that 'mode=full is essential here' for filesystem/session state issues"}, {"text": "Response is specific to R12.2 (uses adop terminology, not adpatch)", "passed": true, "evidence": "Title explicitly states 'ORACLE EBS R12.2 ADOP PREPARE FAILURE' and consistently uses 'adop phase=prepare', 'adop phase=apply', 'adop phase=finalize' throughout, never references adpatch"}, {"text": "Response provides a clear sequence of steps rather than just listing commands", "passed": true, "evidence": "Response organized into 7 numbered steps (UNDERSTAND YOUR CURRENT STATE, ABORT AND CLEAN UP, VALIDATE FILESYSTEM CONSISTENCY, VALIDATE AUTOCONFIG STATE, VERIFY WLS AND SERVICES, RETRY ADOP PREPARE, PROCEED WITH PATCH APPLICATION) with logical progression and explanations for each step"}], "notes": []}, {"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 88.0, "tokens": 64392, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Response covers adpreclone.pl on the source system (both dbTier and appsTier)", "passed": true, "evidence": "Step 1.1 explicitly states 'perl $ORACLE_HOME/appsutil/scripts/<CONTEXT_NAME>/adpreclone.pl dbTier' (line 32) and Step 1.2 states 'perl $ADMIN_SCRIPTS_HOME/adpreclone.pl appsTier' (line 61)"}, {"text": "Response covers adcfgclone.pl on the target system", "passed": true, "evidence": "Step 4.1 states 'perl $ORACLE_HOME/appsutil/clone/bin/adcfgclone.pl dbTier' (line 222) and Step 4.2 states 'perl $APPL_TOP/admin/adcfgclone.pl appsTier' (line 253)"}, {"text": "Response mentions specific context file parameters to update (e.g., s_systemname, s_hostname, s_dbhost or equivalent)", "passed": true, "evidence": "Lines 257-272 list CRITICAL PARAMETERS including s_systemname, s_hostname, s_dbhost, s_dbport, s_webport, s_apps_jdbc_connect_alias, s_appsServerId, s_fnd_top_dir, s_ad_top_dir, s_common_top_dir"}, {"text": "Response mentions running AutoConfig on the target after cloning", "passed": true, "evidence": "Step 5.1 'Run Database AutoConfig' (line 291) with command '$ORACLE_HOME/appsutil/scripts/<NEW_CONTEXT_NAME>/adautocfg.sh' (line 298) and Step 5.2 'Run Application Tier AutoConfig' (line 326) with command '$ADMIN_SCRIPTS_HOME/adautocfg.sh' (line 327)"}, {"text": "Response includes at least one post-clone cleanup step (e.g., disable prod users, update passwords, or disable email/notifications)", "passed": true, "evidence": "Step 6.1 covers changing passwords for sys, system, apps, and sysadmin users (lines 385-412); Step 6.2 disables production users with 'UPDATE FND_USER SET END_DATE = SYSDATE' (lines 414-432); Step 6.4 disables outbound email (lines 458-480)"}], "notes": []}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 51.6, "tokens": 61087, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Response provides a SQL query against FND_CONCURRENT_REQUESTS to identify running requests with their duration", "passed": true, "evidence": "Lines 14-26 provide SELECT query joining FND_CONCURRENT_REQUESTS and FND_CONCURRENT_PROGRAMS with PHASE_CODE='R' and MINUTES_RUNNING calculation"}, {"text": "Response explains how to cross-reference OS PIDs with FND_CONCURRENT_PROCESSES", "passed": true, "evidence": "Lines 47-56 provide SQL query selecting from FND_CONCURRENT_PROCESSES and FND_CONCURRENT_QUEUES, with cross-reference discussion at lines 58-62 on ghost processes"}, {"text": "Response provides the correct SQL to cancel/terminate a stuck request (updating STATUS_CODE and PHASE_CODE in FND_CONCURRENT_REQUESTS)", "passed": true, "evidence": "Lines 130-135 show UPDATE FND_CONCURRENT_REQUESTS SET STATUS_CODE='X', PHASE_CODE='C' with COMMIT"}, {"text": "Response mentions how to get the OS PID for a request so it can be killed at the OS level if needed", "passed": true, "evidence": "Lines 139-144 provide query selecting OS_PROCESS_ID from FND_CONCURRENT_PROCESSES using CONTROLLING_MANAGER; lines 149-150 show kill -9 command"}, {"text": "Response addresses prevention or follow-up (e.g., checking CM health, restarting CM, or checking logs)", "passed": true, "evidence": "Lines 158-177 cover cleaning ghost processes and resetting RUNNING_PROCESSES; lines 180-203 cover CM restart procedure; lines 207-228 cover health verification with queries and status check"}], "notes": []}, {"eval_id": 0, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.2, "passed": 1, "failed": 4, "total": 5, "time_seconds": 47.4, "tokens": 49876, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Response mentions checking or querying AD_ADOP_SESSIONS to understand the current session state", "passed": false, "evidence": "Response checks 'fnd_oam_context_values' and 'ad_editions' tables instead. Does not explicitly query AD_ADOP_SESSIONS table"}, {"text": "Response includes adop phase=abort command as a recovery step", "passed": false, "evidence": "No mention of 'adop phase=abort' anywhere in the response. Uses './adstpall.sh' to stop services instead"}, {"text": "Response includes adop phase=cleanup (with mode=full or explaining when to use it)", "passed": false, "evidence": "No mention of 'adop phase=cleanup' or cleanup phases. Uses manual SQL cleanup and service restart approach instead"}, {"text": "Response is specific to R12.2 (uses adop terminology, not adpatch)", "passed": false, "evidence": "Mentions R12.2 in title but uses 'adop -prepare' syntax (with hyphen) instead of 'adop phase=prepare' (R12.2 syntax), and references Edition-Based Redefinition suggesting some pre-R12.2 concepts mixed in. Syntax inconsistency indicates not fully R12.2 specific"}, {"text": "Response provides a clear sequence of steps rather than just listing commands", "passed": true, "evidence": "Response provides clear structure with DIAGNOSTIC STEPS (1-6), RESOLUTION STEPS with multiple APPROACHES (1-3 each with lettered sub-steps), and clear escalation path"}], "notes": []}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.6, "passed": 3, "failed": 2, "total": 5, "time_seconds": 96.7, "tokens": 57311, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Response covers adpreclone.pl on the source system (both dbTier and appsTier)", "passed": false, "evidence": "The response does not mention adpreclone.pl at all. It jumps directly to database backup/restore (Phase 2) and application tier copying (Phase 3), missing the critical pre-clone preparation step that generates adpreclone logs"}, {"text": "Response covers adcfgclone.pl on the target system", "passed": false, "evidence": "The response refers to 'adconfig.sh' (lines 349-350) and 'AutoConfig' in general, but does not explicitly name 'adcfgclone.pl' as the tool. The actual command 'perl adcfgclone.pl' is not mentioned"}, {"text": "Response mentions specific context file parameters to update (e.g., s_systemname, s_hostname, s_dbhost or equivalent)", "passed": true, "evidence": "Step 1 of Phase 5 references updating 'dbHostName', 'dbPort', 'dbSid' in the adautocfg.xml file (lines 343-346), though the list is less comprehensive than typical context parameter documentation"}, {"text": "Response mentions running AutoConfig on the target after cloning", "passed": true, "evidence": "Phase 5 Step 1 'Run AutoConfig on test-app01' (line 329) and explicitly states 'Run AutoConfig: adconfig.sh' (line 350). Phase 5 Step 2 mentions sourcing new environment after AutoConfig (line 369)"}, {"text": "Response includes at least one post-clone cleanup step (e.g., disable prod users, update passwords, or disable email/notifications)", "passed": true, "evidence": "Phase 6 Step 4 disables email notifications with 'UPDATE fnd_svc_components SET enabled_flag = 'N'' (lines 496-500); Step 5 disables concurrent manager workflows (lines 511-522); Step 6 mentions disabling patching workflows (line 536)"}], "notes": []}, {"eval_id": 2, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.8, "passed": 4, "failed": 1, "total": 5, "time_seconds": 46.2, "tokens": 49501, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Response provides a SQL query against FND_CONCURRENT_REQUESTS to identify running requests with their duration", "passed": true, "evidence": "Lines 14-36 provide SELECT query from fnd_concurrent_requests with status_code='R', phase_code='R', calculating minutes_running, and including os_process_id and oracle_process_id"}, {"text": "Response explains how to cross-reference OS PIDs with FND_CONCURRENT_PROCESSES", "passed": false, "evidence": "Lines 49-54 show running 'ps -ef | grep FNDLIBR' to get OS PIDs, but lacks SQL query to FND_CONCURRENT_PROCESSES table itself. Response discusses patterns to look for (A/B categories) but does not provide actual FND_CONCURRENT_PROCESSES SQL query for cross-referencing"}, {"text": "Response provides the correct SQL to cancel/terminate a stuck request (updating STATUS_CODE and PHASE_CODE in FND_CONCURRENT_REQUESTS)", "passed": true, "evidence": "Lines 133-139 show UPDATE fnd_concurrent_requests SET status_code='X', phase_code='C', completion_date=SYSDATE with COMMIT"}, {"text": "Response mentions how to get the OS PID for a request so it can be killed at the OS level if needed", "passed": true, "evidence": "Lines 14-26 include os_process_id in initial query results; lines 115-120 show killing the process using 'kill -15 <os_process_id>'"}, {"text": "Response addresses prevention or follow-up (e.g., checking CM health, restarting CM, or checking logs)", "passed": true, "evidence": "Lines 154-191 cover CM logs, FND_CONCURRENT queue checks, and enable/disable manager procedures; lines 239-305 cover monitoring implementation, watchdog process, parameter tuning, and resource management"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 65.0667, "stddev": 19.9613, "min": 51.6, "max": 88.0}, "tokens": {"mean": 61717.3333, "stddev": 2421.8238, "min": 59673, "max": 64392}}, "without_skill": {"pass_rate": {"mean": 0.5333, "stddev": 0.3055, "min": 0.2, "max": 0.8}, "time_seconds": {"mean": 63.4333, "stddev": 28.816, "min": 46.2, "max": 96.7}, "tokens": {"mean": 52229.3333, "stddev": 4404.8449, "min": 49501, "max": 57311}}, "delta": {"pass_rate": "+0.47", "time_seconds": "+1.6", "tokens": "+9488"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>
